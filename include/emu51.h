@@ -92,6 +92,15 @@ enum emu51_psw_bits
 	PSW_C  = 7,   /* carry */
 };
 
+/** Reset the emulator.
+ *
+ * @note The internal ram @c m->iram and @c m->iram_len
+ * must be initialized before calling this function.
+ *
+ * @param m the emulator struct
+ */
+void emu51_reset(emu51 *m);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
