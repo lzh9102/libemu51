@@ -7,7 +7,8 @@
 extern "C" {
 #endif
 
-struct emu51_callbacks; /* forward declaration: used in struct emu51 */
+/* forward declaration: used in struct emu51 */
+typedef struct emu51_callbacks emu51_callbacks;
 
 /** 8051/8052 emulator structure
  *
@@ -29,7 +30,7 @@ typedef struct emu51
 
 	uint16_t pc; /**< Program counter */
 
-	struct emu51_callbacks *callbacks; /**< structure to store callback pointers,
+	emu51_callbacks *callbacks; /**< structure to store callback pointers,
 													 leave it NULL if not used */
 
 	/** Pointer for the user to store arbitrary data.
