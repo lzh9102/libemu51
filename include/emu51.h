@@ -13,7 +13,7 @@ extern "C" {
  */
 typedef struct emu51_features
 {
-	unsigned int timer3:1; /**< has timer3 */
+	unsigned int timer2:1; /**< has timer2 */
 } emu51_features;
 
 /* forward declaration: used in struct emu51 */
