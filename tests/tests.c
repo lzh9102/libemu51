@@ -13,7 +13,7 @@ void test_reset(void **state)
 {
 	int i;
 	emu51 m;
-	uint8_t iram[0xff];
+	uint8_t iram[256];
 
 	/* fill the memory with arbitrary data to see if reset really works */
 	for (i = 0; i < sizeof(iram); i++)
