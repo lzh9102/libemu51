@@ -4,7 +4,7 @@
 /* operation: NOP
  * function: consume 1 cycle and do nothing
  */
-static int nop_handler(emu51_instr *instr, const uint8_t *code, emu51 *m)
+static int nop_handler(const emu51_instr *instr, const uint8_t *code, emu51 *m)
 {
 	return 0;
 }
@@ -12,7 +12,7 @@ static int nop_handler(emu51_instr *instr, const uint8_t *code, emu51 *m)
 /* operation: AJMP
  * function: absolute jump within 2k block
  */
-static int ajmp_handler(emu51_instr *instr, const uint8_t *code, emu51 *m)
+static int ajmp_handler(const emu51_instr *instr, const uint8_t *code, emu51 *m)
 {
 	return 0;
 }

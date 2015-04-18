@@ -16,7 +16,7 @@ typedef struct emu51_instr emu51_instr;
  *       its size must be at least instr->bytes
  * m: the emulator structure
  */
-typedef int (*instr_handler)(emu51_instr *instr, const uint8_t *code, emu51* m);
+typedef int (*instr_handler)(const emu51_instr *instr, const uint8_t *code, emu51* m);
 
 typedef struct emu51_instr
 {
