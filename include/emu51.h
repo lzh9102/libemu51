@@ -20,9 +20,24 @@ typedef struct emu51
 	uint16_t pmem_len; /**< Size of the @c pmem buffer,
 								must be power of 2 within 1k~64k */
 
-	uint8_t *iram; /**< Internal memory */
-	uint16_t iram_len; /**< Size of the @c iram buffer,
-								must be power of 2 within 1k~64k */
+	/** Lower internal memory (address 0~127).
+	 *
+	 * User must supply a 128-byte buffer to this pointer.
+	 */
+	uint8_t *iram_lower;
+
+	/** Upper internal memory (address 128~255).
+	 *
+	 * The size of the buffer should be 128 bytes. Leave this field NULL if
+	 * unused (8051 mode).
+	 */
+	uint8_t *iram_upper;
+
+	/** Buffer to store special function registers (SFR).
+	 *
+	 * User must supply a 128-byte buffer to this pointer.
+	 */
+	uint8_t *sfr;
 
 	uint8_t *xram; /**< External memory, leave it NULL if not used */
 	uint16_t xram_len; /**< Size of the @c xram buffer,
@@ -49,35 +64,39 @@ typedef struct emu51_callbacks
 {
 } emu51_callbacks;
 
-/* addresses of SFRs */
-enum emu51_sfr_addrs
+/** Indices of SFRs in the sfr buffer (@c emu51.sfr). */
+enum emu51_sfr_index
 {
-	ADDR_P0 = 0x80,   /* I/O port 0 */
-	ADDR_P1 = 0x90,   /* I/O port 1 */
-	ADDR_P2 = 0xa0,   /* I/O port 2 */
-	ADDR_P3 = 0xb0,   /* I/O port 3 */
+	/* The SFR buffer is 128 bytes, but the memory-mapped address of the SFRs
+	 * are in the range 0x80~0xff. Therefore, the indices of the SFRs are 0x80
+	 * subtracted from their addresses.
+	 */
+	SFR_P0 = 0x80 - 0x80,   /**< I/O port 0 */
+	SFR_P1 = 0x90 - 0x80,   /**< I/O port 1 */
+	SFR_P2 = 0xa0 - 0x80,   /**< I/O port 2 */
+	SFR_P3 = 0xb0 - 0x80,   /**< I/O port 3 */
 
-	ADDR_SP = 0x81,   /* stack pointer */
-	ADDR_DPL = 0x82,  /* data pointer low */
-	ADDR_DPH = 0x83,  /* data pointer high */
-	ADDR_PCON = 0x87, /* power control */
+	SFR_SP = 0x81 - 0x80,   /**< stack pointer */
+	SFR_DPL = 0x82 - 0x80,  /**< data pointer low */
+	SFR_DPH = 0x83 - 0x80,  /**< data pointer high */
+	SFR_PCON = 0x87 - 0x80, /**< power control */
 
-	ADDR_TCON = 0x88, /* timer control */
-	ADDR_TMOD = 0x89, /* timer mode */
-	ADDR_TL0 = 0x8a,  /* timer 0 low */
-	ADDR_TH0 = 0x8c,  /* timer 0 high */
-	ADDR_TL1 = 0x8b,  /* timer 1 low */
-	ADDR_TH1 = 0x8d,  /* timer 1 high */
+	SFR_TCON = 0x88 - 0x80, /**< timer control */
+	SFR_TMOD = 0x89 - 0x80, /**< timer mode */
+	SFR_TL0 = 0x8a - 0x80,  /**< timer 0 low */
+	SFR_TH0 = 0x8c - 0x80,  /**< timer 0 high */
+	SFR_TL1 = 0x8b - 0x80,  /**< timer 1 low */
+	SFR_TH1 = 0x8d - 0x80,  /**< timer 1 high */
 
-	ADDR_SCON = 0x98, /* serial control */
-	ADDR_SBUF = 0x99, /* serial buffer */
+	SFR_SCON = 0x98 - 0x80, /**< serial control */
+	SFR_SBUF = 0x99 - 0x80, /**< serial buffer */
 
-	ADDR_IE = 0xa8,   /* interrupt enable */
-	ADDR_IP = 0xb8,   /* interrupt priority */
+	SFR_IE = 0xa8 - 0x80,   /**< interrupt enable */
+	SFR_IP = 0xb8 - 0x80,   /**< interrupt priority */
 
-	ADDR_PSW = 0xD0,  /* program status word */
-	ADDR_ACC = 0xe0,  /* accumulator */
-	ADDR_B = 0xf0,    /* B register, used in multiply and divide operations */
+	SFR_PSW = 0xD0 - 0x80,  /**< program status word */
+	SFR_ACC = 0xe0 - 0x80,  /**< accumulator */
+	SFR_B = 0xf0 - 0x80,    /**< B register */
 };
 
 /* bit definitions of PSW */
@@ -95,8 +114,8 @@ enum emu51_psw_bits
 
 /** Reset the emulator.
  *
- * @note The internal ram @c m->iram and @c m->iram_len
- * must be initialized before calling this function.
+ * @note The SFR buffer @c m->sfr must be specified before calling this
+ * function.
  *
  * @param m the emulator struct
  */
