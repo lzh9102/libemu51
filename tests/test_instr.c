@@ -29,11 +29,9 @@ typedef struct testdata
 	emu51 *m; /* the emulator struct */
 	uint8_t *sfr; /* buffer to hold SFRs, 128 bytes */
 	uint8_t *pmem; /* program memory */
-	uint16_t pmem_len; /* program memory size */
 	uint8_t *iram_lower; /* lower internal RAM, 128 bytes */
 	uint8_t *iram_upper; /* lower internal RAM, 128 bytes */
 	uint8_t *xram; /* external RAM */
-	uint16_t xram_len; /* size of the external RAM */
 } testdata;
 
 /* Create emulator and buffers for testing.
@@ -57,23 +55,51 @@ testdata *alloc_test_data()
 	data->iram_upper = calloc(128, 1);
 
 	/* 4KB of program memory */
-	data->pmem_len = PMEM_SIZE;
-	data->pmem = calloc(data->pmem_len, 1);
+	data->pmem = calloc(PMEM_SIZE, 1);
 
 	/* external RAM */
-	data->xram_len = XRAM_SIZE;
-	data->xram = calloc(data->xram_len, 1);
+	data->xram = calloc(XRAM_SIZE, 1);
 
 	/* setup the emulator */
 	memset(data->m, 0, sizeof(emu51));
 	data->m->sfr = data->sfr;
 	data->m->pmem = data->pmem;
-	data->m->pmem_len = data->pmem_len;
+	data->m->pmem_len = PMEM_SIZE;
 	data->m->iram_lower = data->iram_lower;
 	data->m->iram_upper = data->iram_upper;
 	data->m->xram = data->xram;
-	data->m->xram_len = data->xram_len;
+	data->m->xram_len = XRAM_SIZE;
 	emu51_reset(data->m);
+
+	return data;
+}
+
+/* Duplicate the data (make a separate copy of it).
+ *
+ * It's the caller's responsibility to free the duplicated data.
+ */
+testdata *dup_test_data(const testdata *orig)
+{
+	testdata *data = alloc_test_data();
+
+	/* copy the emulator fields
+	 * ATTENTION: pointers like pmem and iram are overwritten by the pointers
+	 * in the orig struct. It is necessary to fix this.
+	 */
+	*data->m = *orig->m;
+	/* fix the pointer fields */
+	data->m->sfr = data->sfr;
+	data->m->pmem = data->pmem;
+	data->m->iram_lower = data->iram_lower;
+	data->m->iram_upper = data->iram_upper;
+	data->m->xram = data->xram;
+
+	/* copy the content of buffers */
+	memcpy(data->sfr, orig->sfr, 128);
+	memcpy(data->pmem, orig->pmem, PMEM_SIZE);
+	memcpy(data->iram_lower, orig->iram_lower, 128);
+	memcpy(data->iram_upper, orig->iram_upper, 128);
+	memcpy(data->xram, orig->m->xram, XRAM_SIZE);
 
 	return data;
 }
@@ -114,25 +140,20 @@ void test_nop(void **state)
 	write_random_data(m->iram_upper, 128);
 	write_random_data(m->xram, XRAM_SIZE);
 
-	/* save the original memory and SFRs */
-	uint8_t sfr[128], iram_lower[128], iram_upper[128];
-	uint8_t *xram = malloc(XRAM_SIZE); /* xram is big, don't put it on stack */
-	memcpy(sfr, m->sfr, 128);
-	memcpy(iram_lower, m->iram_lower, 128);
-	memcpy(iram_upper, m->iram_upper, 128);
-	memcpy(xram, m->xram, XRAM_SIZE);
+	/* save the original state */
+	testdata *orig_data = dup_test_data(data);
 
 	/* execute nop */
 	const emu51_instr *instr = emu51_get_instr(0x00); /* NOP */
 	instr->handler(instr, &m->pmem[0], m);
 
 	/* nop shouldn't change any of the SFRs, iram or xram */
-	assert_memory_equal(sfr, m->sfr, 128);
-	assert_memory_equal(iram_lower, m->iram_lower, 128);
-	assert_memory_equal(iram_upper, m->iram_upper, 128);
-	assert_memory_equal(xram, m->xram, XRAM_SIZE);
+	assert_memory_equal(data->sfr, orig_data->sfr, 128);
+	assert_memory_equal(data->iram_lower, orig_data->iram_lower, 128);
+	assert_memory_equal(data->iram_upper, orig_data->iram_upper, 128);
+	assert_memory_equal(data->xram, orig_data->xram, XRAM_SIZE);
 
-	free(xram);
+	free_test_data(orig_data);
 	free_test_data(data);
 }
 
