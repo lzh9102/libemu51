@@ -182,6 +182,102 @@ void test_nop(void **state)
 	free_test_data(data);
 }
 
+void test_ajmp(void **state)
+{
+	testdata *data = alloc_test_data();
+
+	write_random_data_to_memories(data);
+
+	testdata *orig_data = dup_test_data(data);
+
+#define TEST_AJMP(op_, pc_, page_, second_byte_, target_) do { \
+	data->m->pc = pc_; \
+	data->pmem[0] = op_; \
+	data->pmem[1] = second_byte_; \
+	const emu51_instr *instr = emu51_get_instr(op_); \
+	assert_non_null(instr->handler); \
+	instr->handler(instr, data->pmem, data->m); \
+	assert_emu51_all_ram_equal(data, orig_data); \
+	assert_int_equal(data->m->pc, target_); } while (0)
+
+	/* AJMP page0 (0x01)
+	 *
+	 * pc:     1010 1111 1010 1010 (0xafaa)
+	 * page:         000           (0x0)
+	 * second byte:      0101 0101 (0x55)
+	 * target: 1010 1000 0101 0101 (0xa855)
+	 */
+	TEST_AJMP(0x01, 0xafaa, 0x0, 0x55, 0xa855);
+
+	/* AJMP page1 (0x21)
+	 *
+	 * pc:     1010 1110 1010 1010 (0xaeaa)
+	 * page:         001           (0x1)
+	 * second byte:      0101 0101 (0x55)
+	 * target: 1010 1001 0101 0101 (0xa955)
+	 */
+	TEST_AJMP(0x21, 0xaeaa, 0x1, 0x55, 0xa955);
+
+	/* AJMP page2 (0x41)
+	 *
+	 * pc:     1010 1101 1010 1010 (0xadaa)
+	 * page:         010           (0x2)
+	 * second byte:      0101 0101 (0x55)
+	 * target: 1010 1010 0101 0101 (0xaa55)
+	 */
+	TEST_AJMP(0x41, 0xadaa, 0x2, 0x55, 0xaa55);
+
+	/* AJMP page3 (0x61)
+	 *
+	 * pc:     1010 1100 1010 1010 (0xacaa)
+	 * page:         011           (0x3)
+	 * second byte:      0101 0101 (0x55)
+	 * target: 1010 1011 0101 0101 (0xab55)
+	 */
+	TEST_AJMP(0x61, 0xacaa, 0x3, 0x55, 0xab55);
+
+	/* AJMP page4 (0x81)
+	 *
+	 * pc:     1010 1011 1010 1010 (0xabaa)
+	 * page:         100           (0x4)
+	 * second byte:      0101 0101 (0x55)
+	 * target: 1010 1100 0101 0101 (0xac55)
+	 */
+	TEST_AJMP(0x81, 0xabaa, 0x4, 0x55, 0xac55);
+
+	/* AJMP page5 (0xa1)
+	 *
+	 * pc:     1010 1010 1010 1010 (0xaaaa)
+	 * page:         101           (0x5)
+	 * second byte:      0101 0101 (0x55)
+	 * target: 1010 1101 0101 0101 (0xad55)
+	 */
+	TEST_AJMP(0xa1, 0xaaaa, 0x5, 0x55, 0xad55);
+
+	/* AJMP page6 (0xc1)
+	 *
+	 * pc:     1010 1001 1010 1010 (0xa9aa)
+	 * page:         110           (0x6)
+	 * second byte:      0101 0101 (0x55)
+	 * target: 1010 1110 0101 0101 (0xae55)
+	 */
+	TEST_AJMP(0xc1, 0xa9aa, 0x6, 0x55, 0xae55);
+
+	/* AJMP page7 (0xe1)
+	 *
+	 * pc:     1010 1000 1010 1010 (0xa8aa)
+	 * page:         111           (0x7)
+	 * second byte:      0101 0101 (0x55)
+	 * target: 1010 1111 0101 0101 (0xaf55)
+	 */
+	TEST_AJMP(0xe1, 0xa8aa, 0x7, 0x55, 0xaf55);
+
+#undef TEST_AJMP
+
+	free_test_data(orig_data);
+	free_test_data(data);
+}
+
 void test_ljmp(void **state)
 {
 	testdata *data = alloc_test_data();
@@ -216,6 +312,7 @@ int main()
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_nop),
+		cmocka_unit_test(test_ajmp),
 		cmocka_unit_test(test_ljmp),
 	};
 	/* don't use setup and teardown as cmocka doesn't report memory bugs in them

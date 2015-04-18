@@ -19,6 +19,13 @@ static int nop_handler(const emu51_instr *instr, const uint8_t *code, emu51 *m)
  */
 static int ajmp_handler(const emu51_instr *instr, const uint8_t *code, emu51 *m)
 {
+	/* the first 3 bit of the opcode is the page number */
+	int page = (code[0] >> 5) & 0x7;
+
+	/* replace the lower 11 bits of PC with {page, code[1]} */
+	m->pc &= 0xf800; /* clear the lower 11 bits */
+	m->pc |= (page << 8) | code[1]; /* set the lower 11 bits to target */
+
 	return 0;
 }
 
@@ -76,7 +83,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x1e),
 	NOT_IMPLEMENTED(0x1f),
 	NOT_IMPLEMENTED(0x20),
-	NOT_IMPLEMENTED(0x21),
+	INSTR(0x21, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0x22),
 	NOT_IMPLEMENTED(0x23),
 	NOT_IMPLEMENTED(0x24),
@@ -108,7 +115,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x3e),
 	NOT_IMPLEMENTED(0x3f),
 	NOT_IMPLEMENTED(0x40),
-	NOT_IMPLEMENTED(0x41),
+	INSTR(0x41, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0x42),
 	NOT_IMPLEMENTED(0x43),
 	NOT_IMPLEMENTED(0x44),
@@ -140,7 +147,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x5e),
 	NOT_IMPLEMENTED(0x5f),
 	NOT_IMPLEMENTED(0x60),
-	NOT_IMPLEMENTED(0x61),
+	INSTR(0x61, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0x62),
 	NOT_IMPLEMENTED(0x63),
 	NOT_IMPLEMENTED(0x64),
@@ -172,7 +179,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x7e),
 	NOT_IMPLEMENTED(0x7f),
 	NOT_IMPLEMENTED(0x80),
-	NOT_IMPLEMENTED(0x81),
+	INSTR(0x81, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0x82),
 	NOT_IMPLEMENTED(0x83),
 	NOT_IMPLEMENTED(0x84),
@@ -204,7 +211,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x9e),
 	NOT_IMPLEMENTED(0x9f),
 	NOT_IMPLEMENTED(0xa0),
-	NOT_IMPLEMENTED(0xa1),
+	INSTR(0xa1, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0xa2),
 	NOT_IMPLEMENTED(0xa3),
 	NOT_IMPLEMENTED(0xa4),
@@ -236,7 +243,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0xbe),
 	NOT_IMPLEMENTED(0xbf),
 	NOT_IMPLEMENTED(0xc0),
-	NOT_IMPLEMENTED(0xc1),
+	INSTR(0xc1, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0xc2),
 	NOT_IMPLEMENTED(0xc3),
 	NOT_IMPLEMENTED(0xc4),
@@ -268,7 +275,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0xde),
 	NOT_IMPLEMENTED(0xdf),
 	NOT_IMPLEMENTED(0xe0),
-	NOT_IMPLEMENTED(0xe1),
+	INSTR(0xe1, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0xe2),
 	NOT_IMPLEMENTED(0xe3),
 	NOT_IMPLEMENTED(0xe4),
