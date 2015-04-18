@@ -17,14 +17,19 @@ static int ajmp_handler(const emu51_instr *instr, const uint8_t *code, emu51 *m)
 	return 0;
 }
 
+/* macro to define an instruction */
+#define INSTR(op, mne, b, c, h) {.opcode = op, .bytes = b, .cycles = c, \
+	.handler = h}
+
 /* fill in this macro in the table if the opcode is not implemented */
 #define NOT_IMPLEMENTED(op) {.opcode = (op), \
 	.bytes = 0, .cycles = 0, .handler = 0}
 
 /* the instruction lookup table: valid range of opcode is 0~255 */
 const emu51_instr _emu51_instr_table[256] = {
-	/* NOP  */ {.opcode = 0x00, .bytes = 1, .cycles = 1, .handler = nop_handler},
-	/* AJMP */ {.opcode = 0x01, .bytes = 2, .cycles = 2, .handler = ajmp_handler},
+	/* opcode, mnemonics, bytes, cycles, handler */
+	INSTR(0x00, "NOP",  1, 1, nop_handler),
+	INSTR(0x01, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0x02),
 	NOT_IMPLEMENTED(0x03),
 	NOT_IMPLEMENTED(0x04),
