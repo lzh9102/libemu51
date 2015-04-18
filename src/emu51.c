@@ -1,11 +1,6 @@
 #include <emu51.h>
 #include <assert.h>
-
-/* convenient macro to access registers
- *
- * example: use REG(m, ACC) to access the accumulator
- */
-#define REG(m, reg_name) (*(&m->sfr[SFR_ ## reg_name]))
+#include "helpers.h"
 
 void emu51_reset(emu51 *m)
 {
