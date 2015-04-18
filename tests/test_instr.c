@@ -124,6 +124,16 @@ void write_random_data(uint8_t *buffer, size_t size)
 		buffer[i] = rand() & 0xff;
 }
 
+/* write random data to the memories (pmem, iram, xram) in the testdata */
+void write_random_data_to_memories(testdata *data)
+{
+	write_random_data(data->pmem, PMEM_SIZE);
+	write_random_data(data->sfr, 128);
+	write_random_data(data->iram_lower, 128);
+	write_random_data(data->iram_upper, 128);
+	write_random_data(data->xram, XRAM_SIZE);
+}
+
 /* here goes the test functions */
 
 void test_nop(void **state)
@@ -131,14 +141,11 @@ void test_nop(void **state)
 	testdata *data = alloc_test_data();
 	emu51 *m = data->m;
 
+	/* fill in random data to emulator memory */
+	write_random_data_to_memories(data);
+
 	/* fill in NOP in pmem[0] */
 	data->pmem[0] = 0x00;
-
-	/* fill in random data to emulator memory */
-	write_random_data(m->sfr, 128);
-	write_random_data(m->iram_lower, 128);
-	write_random_data(m->iram_upper, 128);
-	write_random_data(m->xram, XRAM_SIZE);
 
 	/* save the original state */
 	testdata *orig_data = dup_test_data(data);
