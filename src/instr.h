@@ -22,9 +22,9 @@ typedef struct emu51_instr
 {
 	uint8_t opcode;
 
-	unsigned int bytes:4;  /* length of the instruction in bytes,
+	uint8_t bytes;  /* length of the instruction in bytes,
 	                          zero if the instruction is not implemented */
-	unsigned int cycles:4; /* number of machine cycles the instruction takes */
+	uint8_t cycles; /* number of machine cycles the instruction takes */
 
 	instr_handler handler; /* callback function to process the instruction */
 } emu51_instr;
