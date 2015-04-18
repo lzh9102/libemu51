@@ -1,6 +1,11 @@
 #include <emu51.h>
 #include "instr.h"
 
+/* Implementations of 8051/8052 instructions.
+ *
+ * The functions should return 0 on success or an error code on error.
+ */
+
 /* operation: NOP
  * function: consume 1 cycle and do nothing
  */
@@ -17,6 +22,16 @@ static int ajmp_handler(const emu51_instr *instr, const uint8_t *code, emu51 *m)
 	return 0;
 }
 
+/* operation: LJMP
+ * function: long jump
+ */
+static int ljmp_handler(const emu51_instr *instr, const uint8_t *code, emu51 *m)
+{
+	uint16_t target_addr = (code[1] << 8) | code[2];
+	m->pc = target_addr;
+	return 0;
+}
+
 /* macro to define an instruction */
 #define INSTR(op, mne, b, c, h) {.opcode = op, .bytes = b, .cycles = c, \
 	.handler = h}
@@ -30,7 +45,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	/* opcode, mnemonics, bytes, cycles, handler */
 	INSTR(0x00, "NOP",  1, 1, nop_handler),
 	INSTR(0x01, "AJMP", 2, 2, ajmp_handler),
-	NOT_IMPLEMENTED(0x02),
+	INSTR(0x02, "LJMP", 3, 2, ljmp_handler),
 	NOT_IMPLEMENTED(0x03),
 	NOT_IMPLEMENTED(0x04),
 	NOT_IMPLEMENTED(0x05),

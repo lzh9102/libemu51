@@ -134,6 +134,11 @@ void write_random_data_to_memories(testdata *data)
 	write_random_data(data->xram, XRAM_SIZE);
 }
 
+/* get the upper 8-bit of a 16-bit word */
+#define UPPER_BYTE(word) (((word)>>8) & 0xff)
+/* get the lower 8-bit of a 16-bit word */
+#define LOWER_BYTE(word) ((word) & 0xff)
+
 #define assert_emu51_sfr_equal(data1, data2) \
 	assert_memory_equal(data1->sfr, data2->sfr, 128)
 
@@ -177,12 +182,41 @@ void test_nop(void **state)
 	free_test_data(data);
 }
 
+void test_ljmp(void **state)
+{
+	testdata *data = alloc_test_data();
+
+	write_random_data_to_memories(data);
+
+	/* save the original state */
+	testdata *orig_data = dup_test_data(data);
+
+	/* ljmp */
+	uint8_t opcode = 0x02;
+	uint16_t target_addr = 0x1234;
+	data->pmem[0] = opcode;
+	data->pmem[1] = UPPER_BYTE(target_addr);
+	data->pmem[2] = LOWER_BYTE(target_addr);
+	const emu51_instr *instr = emu51_get_instr(opcode);
+	instr->handler(instr, data->pmem, data->m);
+
+	/* ljmp shouldn't change any of the memories */
+	assert_emu51_all_ram_equal(data, orig_data);
+
+	/* ljmp should set the pc to the target address */
+	assert_int_equal(data->m->pc, target_addr);
+
+	free_test_data(orig_data);
+	free_test_data(data);
+}
+
 /* end of test functions */
 
 int main()
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_nop),
+		cmocka_unit_test(test_ljmp),
 	};
 	/* don't use setup and teardown as cmocka doesn't report memory bugs in them
 	 */
