@@ -134,6 +134,22 @@ void write_random_data_to_memories(testdata *data)
 	write_random_data(data->xram, XRAM_SIZE);
 }
 
+#define assert_emu51_sfr_equal(data1, data2) \
+	assert_memory_equal(data1->sfr, data2->sfr, 128)
+
+#define assert_emu51_iram_equal(data1, data2) do { \
+	assert_memory_equal(data1->iram_lower, data2->iram_lower, 128); \
+	assert_memory_equal(data1->iram_upper, data2->iram_upper, 128); } while (0)
+
+#define assert_emu51_xram_equal(data1, data2) \
+	assert_memory_equal(data1->xram, data2->xram, XRAM_SIZE)
+
+/* sfr, iram, xram all equal */
+#define assert_emu51_all_ram_equal(data1, data2) do { \
+	assert_emu51_sfr_equal(data1, data2); \
+	assert_emu51_iram_equal(data1, data2); \
+	assert_emu51_xram_equal(data1, data2); } while (0)
+
 /* here goes the test functions */
 
 void test_nop(void **state)
@@ -155,10 +171,7 @@ void test_nop(void **state)
 	instr->handler(instr, &m->pmem[0], m);
 
 	/* nop shouldn't change any of the SFRs, iram or xram */
-	assert_memory_equal(data->sfr, orig_data->sfr, 128);
-	assert_memory_equal(data->iram_lower, orig_data->iram_lower, 128);
-	assert_memory_equal(data->iram_upper, orig_data->iram_upper, 128);
-	assert_memory_equal(data->xram, orig_data->xram, XRAM_SIZE);
+	assert_emu51_all_ram_equal(data, orig_data);
 
 	free_test_data(orig_data);
 	free_test_data(data);
