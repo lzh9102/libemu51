@@ -45,6 +45,8 @@ typedef struct emu51
 
 	uint16_t pc; /**< Program counter */
 
+	int errno; /**< Error number. @see emu51_errno */
+
 	emu51_callbacks *callbacks; /**< structure to store callback pointers,
 													 leave it NULL if not used */
 
@@ -110,6 +112,11 @@ enum emu51_psw_bits
 	PSW_F0 = 5,   /* flag 0, for general software use */
 	PSW_AC = 6,   /* auxiliary carry */
 	PSW_C  = 7,   /* carry */
+};
+
+enum emu51_errno
+{
+	EMU51_SUCCESS = 0,
 };
 
 /** Reset the emulator.
