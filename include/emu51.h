@@ -7,6 +7,15 @@
 extern "C" {
 #endif
 
+/** Additional features settings of the emulator.
+ *
+ * Set the respective bits to enable the features.
+ */
+typedef struct emu51_features
+{
+	unsigned int timer3:1; /**< has timer3 */
+} emu51_features;
+
 /* forward declaration: used in struct emu51 */
 typedef struct emu51_callbacks emu51_callbacks;
 
@@ -46,6 +55,8 @@ typedef struct emu51
 	uint16_t pc; /**< Program counter */
 
 	int errno; /**< Error number. @see emu51_errno */
+
+	emu51_features features; /**< Additional features of the emulator. */
 
 	emu51_callbacks *callbacks; /**< structure to store callback pointers,
 													 leave it NULL if not used */
