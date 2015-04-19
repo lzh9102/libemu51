@@ -107,7 +107,7 @@ enum emu51_sfr_index
 	SFR_IE = 0xa8 - 0x80,   /**< interrupt enable */
 	SFR_IP = 0xb8 - 0x80,   /**< interrupt priority */
 
-	SFR_PSW = 0xD0 - 0x80,  /**< program status word */
+	SFR_PSW = 0xd0 - 0x80,  /**< program status word */
 	SFR_ACC = 0xe0 - 0x80,  /**< accumulator */
 	SFR_B = 0xf0 - 0x80,    /**< B register */
 };
