@@ -30,7 +30,7 @@ typedef struct emu51_instr
 } emu51_instr;
 
 /* find the instruction by opcode */
-static inline const emu51_instr* emu51_get_instr(uint8_t opcode)
+static inline const emu51_instr* _emu51_get_instr(uint8_t opcode)
 {
 	extern const emu51_instr _emu51_instr_table[];
 	return &_emu51_instr_table[opcode];
