@@ -28,12 +28,10 @@ void test_reset(void **state)
 	memset(&m, 0, sizeof(m));
 	m.sfr = sfr;
 	m.pc = 0x10; /* set pc to arbitrary value to test the reset */
-	m.errno = -1; /* set errno to arbitrary value */
 
 	emu51_reset(&m);
 	assert_int_equal(m.pc, 0);
 	assert_int_equal(m.sfr[SFR_SP], 0x07); /* initial value of SP is 07h */
-	assert_int_equal(m.errno, 0);
 
 }
 
@@ -74,12 +72,10 @@ void test_step(void **state)
 	/* pc should advance on each NOP step */
 	pmem[0] = pmem[1] = 0x00; /* NOP */
 	m.pc = 0;
-	m.errno = 0;
 	error = emu51_step(&m, &cycles);
 	assert_int_equal(error, 0);
 	assert_int_equal(cycles, 1);
 	assert_int_equal(m.pc, 1);
-	m.errno = 0;
 	error = emu51_step(&m, &cycles);
 	assert_int_equal(error, 0);
 	assert_int_equal(cycles, 1);
@@ -88,7 +84,6 @@ void test_step(void **state)
 	/* should not execute instruction outside program memory boundary */
 	pmem[4095] = 0x00; /* NOP */
 	m.pc = 4095; /* this one is OK */
-	m.errno = 0;
 	error = emu51_step(&m, NULL);
 	assert_int_equal(error, 0);
 	assert_int_equal(m.pc, 4096);
@@ -98,14 +93,12 @@ void test_step(void **state)
 	/* 2-byte instruction on byte 4094:4095 is OK */
 	pmem[4094] = 0x01; /* AJMP, 2-byte instruction */
 	m.pc = 4094;
-	m.errno = 0;
 	error = emu51_step(&m, NULL);
 	assert_int_equal(error, 0);
 
 	/* 2-byte instruction on byte 4095:4096 is not OK */
 	pmem[4095] = 0x01; /* AJMP */
 	m.pc = 4095;
-	m.errno = 0;
 	error = emu51_step(&m, NULL);
 	assert_int_equal(error, EMU51_PMEM_OUT_OF_RANGE);
 

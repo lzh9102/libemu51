@@ -54,8 +54,6 @@ typedef struct emu51
 
 	uint16_t pc; /**< Program counter */
 
-	int errno; /**< Error number. @see emu51_errno */
-
 	emu51_features features; /**< Additional features of the emulator. */
 
 	emu51_callbacks *callbacks; /**< structure to store callback pointers,
