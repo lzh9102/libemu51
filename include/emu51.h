@@ -128,6 +128,7 @@ enum emu51_psw_mask
 enum emu51_errno
 {
 	EMU51_SUCCESS = 0,
+	EMU51_PMEM_OUT_OF_RANGE,
 };
 
 /** Reset the emulator.
@@ -138,6 +139,16 @@ enum emu51_errno
  * @param m the emulator struct
  */
 void emu51_reset(emu51 *m);
+
+/** Execute one instruction.
+ *
+ * @param m the emulator object
+ * @param cycles [out] How many cycles does the instruction takes. Set it to
+ *                     NULL to ignore the value.
+ *
+ * @return Returns 0 if success; returns an error number on failure.
+ */
+int emu51_step(emu51 *m, int *cycles);
 
 #ifdef __cplusplus
 } /* extern "C" */
