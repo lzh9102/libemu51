@@ -112,17 +112,17 @@ enum emu51_sfr_index
 	SFR_B = 0xf0 - 0x80,    /**< B register */
 };
 
-/* bit definitions of PSW */
-enum emu51_psw_bits
+/* bitmasks of PSW */
+enum emu51_psw_mask
 {
-	PSW_P = 0,    /* parity */
-	PSW_UD = 1,   /* user defined, for general software use */
-	PSW_OV = 2,   /* overflow flag */
-	PSW_RS0 = 3,  /* lower-order bit of register selection */
-	PSW_RS1 = 4,  /* higher-order bit of register selection */
-	PSW_F0 = 5,   /* flag 0, for general software use */
-	PSW_AC = 6,   /* auxiliary carry */
-	PSW_C  = 7,   /* carry */
+	PSW_P = 0x01,   /* parity */
+	PSW_UD = 0x02,  /* user defined, for general software use */
+	PSW_OV = 0x04,  /* overflow flag */
+	PSW_RS0 = 0x08, /* lower-order bit of register selection */
+	PSW_RS1 = 0x10, /* higher-order bit of register selection */
+	PSW_F0 = 0x20,  /* flag 0, for general software use */
+	PSW_AC = 0x40,  /* auxiliary carry */
+	PSW_C  = 0x80,  /* carry */
 };
 
 enum emu51_errno
