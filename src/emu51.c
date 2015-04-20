@@ -13,7 +13,7 @@ void emu51_reset(emu51 *m)
 
 int emu51_step(emu51 *m, int *cycles)
 {
-	/* check if pc is in range */
+	/* check if pc points to a valid program memory location */
 	if (m->pc >= m->pmem_len)
 		return EMU51_PMEM_OUT_OF_RANGE;
 
@@ -21,7 +21,7 @@ int emu51_step(emu51 *m, int *cycles)
 	const uint8_t *code = &m->pmem[m->pc];
 	const emu51_instr *instr = _emu51_get_instr(code[0]);
 
-	/* do not execute multi-byte instruction if it crosses the boundary */
+	/* check if the entire instruction resides in valid program memory */
 	if (m->pc + instr->bytes > m->pmem_len)
 		return EMU51_PMEM_OUT_OF_RANGE;
 
