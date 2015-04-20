@@ -23,10 +23,12 @@ void test_reset(void **state)
 	memset(&m, 0, sizeof(m));
 	m.sfr = sfr;
 	m.pc = 0x10; /* set pc to arbitrary value to test the reset */
+	m.errno = -1; /* set errno to arbitrary value */
 
 	emu51_reset(&m);
 	assert_int_equal(m.pc, 0);
 	assert_int_equal(m.sfr[SFR_SP], 0x07); /* initial value of SP is 07h */
+	assert_int_equal(m.errno, 0);
 
 }
 
