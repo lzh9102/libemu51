@@ -40,7 +40,7 @@ void test_instr_table(void **state)
 	int opcode;
 	for (opcode = 0; opcode <= 255; opcode++) {
 		/* The instruction table is a lookup table indexed by opcode. */
-		const emu51_instr *instr = _emu51_get_instr(opcode);
+		const emu51_instr *instr = _emu51_decode_instr(opcode);
 
 		/* the opcode-th instruction should have opcode opcode */
 		assert_int_equal(instr->opcode, opcode);

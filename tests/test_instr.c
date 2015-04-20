@@ -172,7 +172,7 @@ void test_nop(void **state)
 	testdata *orig_data = dup_test_data(data);
 
 	/* execute nop */
-	const emu51_instr *instr = _emu51_get_instr(0x00); /* NOP */
+	const emu51_instr *instr = _emu51_decode_instr(0x00); /* NOP */
 	instr->handler(instr, &m->pmem[0], m);
 
 	/* nop shouldn't change any of the SFRs, iram or xram */
@@ -194,7 +194,7 @@ void test_ajmp(void **state)
 	data->m->pc = pc_; \
 	data->pmem[0] = op_; \
 	data->pmem[1] = second_byte_; \
-	const emu51_instr *instr = _emu51_get_instr(op_); \
+	const emu51_instr *instr = _emu51_decode_instr(op_); \
 	assert_non_null(instr->handler); \
 	instr->handler(instr, data->pmem, data->m); \
 	assert_emu51_all_ram_equal(data, orig_data); \
@@ -293,7 +293,7 @@ void test_ljmp(void **state)
 	data->pmem[0] = opcode;
 	data->pmem[1] = UPPER_BYTE(target_addr);
 	data->pmem[2] = LOWER_BYTE(target_addr);
-	const emu51_instr *instr = _emu51_get_instr(opcode);
+	const emu51_instr *instr = _emu51_decode_instr(opcode);
 	instr->handler(instr, data->pmem, data->m);
 
 	/* ljmp shouldn't change any of the memories */

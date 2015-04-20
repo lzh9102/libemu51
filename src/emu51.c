@@ -19,7 +19,7 @@ int emu51_step(emu51 *m, int *cycles)
 
 	/* decode the instruction */
 	const uint8_t *code = &m->pmem[m->pc];
-	const emu51_instr *instr = _emu51_get_instr(code[0]);
+	const emu51_instr *instr = _emu51_decode_instr(code[0]);
 
 	/* check if the entire instruction resides in valid program memory */
 	if (m->pc + instr->bytes > m->pmem_len)
