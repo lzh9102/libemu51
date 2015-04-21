@@ -139,6 +139,11 @@ void write_random_data_to_memories(testdata *data)
 /* get the lower 8-bit of a 16-bit word */
 #define LOWER_BYTE(word) ((word) & 0xff)
 
+#define GET_DPTR(m) ((m->sfr[SFR_DPH] << 8) | m->sfr[SFR_DPL])
+#define SET_DPTR(m, dptr) do { \
+	m->sfr[SFR_DPL] = LOWER_BYTE(dptr); \
+	m->sfr[SFR_DPH] = UPPER_BYTE(dptr); } while (0)
+
 #define assert_emu51_sfr_equal(data1, data2) \
 	assert_memory_equal(data1->sfr, data2->sfr, 128)
 
@@ -154,6 +159,26 @@ void write_random_data_to_memories(testdata *data)
 	assert_emu51_sfr_equal(data1, data2); \
 	assert_emu51_iram_equal(data1, data2); \
 	assert_emu51_xram_equal(data1, data2); } while (0)
+
+#define INSTR1(opcode) (opcode)
+#define INSTR2(opcode, op1) (((op1) << 8) | (opcode))
+#define INSTR3(opcode, op1, op2) (((op1) << 16) | ((op2) << 8) | (opcode))
+
+/* put the instruction in pc and run it */
+int run_instr(uint32_t instr, testdata *data)
+{
+	uint8_t buffer[4];
+
+	buffer[0] = instr & 0xff;
+	buffer[1] = instr & 0xff00;
+	buffer[2] = instr & 0xff0000;
+
+	uint8_t opcode = buffer[0];
+
+	const emu51_instr *instr_info = _emu51_decode_instr(opcode);
+
+	return instr_info->handler(instr_info, buffer, data->m);
+}
 
 /* here goes the test functions */
 
@@ -372,6 +397,55 @@ void test_sjmp(void **state)
 	free_test_data(data);
 }
 
+void test_movc()
+{
+	testdata *data = alloc_test_data();
+	emu51 *m = data->m;
+
+	/* MOVC A, @A+DPTR */
+	uint8_t opcode = 0x93;
+	int err;
+	SET_DPTR(m, 150);
+	m->sfr[SFR_ACC] = 7;
+	data->pmem[150] = 1; /* this is not the data to read */
+	data->pmem[157] = 2; /* this is the data to read (DPTR+ACC) */
+	err = run_instr(opcode, data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->sfr[SFR_ACC], 2);
+
+	/* test boundary condition */
+	SET_DPTR(m, PMEM_SIZE-1); /* in bounds */
+	m->sfr[SFR_ACC] = 0;
+	err = run_instr(opcode, data);
+	assert_int_equal(err, 0);
+	SET_DPTR(m, PMEM_SIZE); /* out of bounds */
+	err = run_instr(opcode, data);
+	assert_int_equal(err, EMU51_PMEM_OUT_OF_RANGE);
+
+	SET_DPTR(m, 0);
+
+	/* MOVC A, @A+PC */
+	opcode = 0x83;
+	m->pc = 140;
+	m->sfr[SFR_ACC] = 7;
+	data->pmem[140] = 1; /* this is not the data to read */
+	data->pmem[147] = 2; /* this is the data to read (DPTR+ACC) */
+	err = run_instr(opcode, data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->sfr[SFR_ACC], 2);
+
+	/* test boundary condition */
+	m->pc = PMEM_SIZE - 1; /* in bounds */
+	m->sfr[SFR_ACC] = 0;
+	err = run_instr(opcode, data);
+	assert_int_equal(err, 0);
+	m->pc = PMEM_SIZE; /* out of bounds */
+	err = run_instr(opcode, data);
+	assert_int_equal(err, EMU51_PMEM_OUT_OF_RANGE);
+
+	free_test_data(data);
+}
+
 /* end of test functions */
 
 int main()
@@ -382,6 +456,7 @@ int main()
 		cmocka_unit_test(test_jmp),
 		cmocka_unit_test(test_ljmp),
 		cmocka_unit_test(test_sjmp),
+		cmocka_unit_test(test_movc),
 	};
 	/* don't use setup and teardown as cmocka doesn't report memory bugs in them
 	 */

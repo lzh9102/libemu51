@@ -83,6 +83,36 @@ DEFINE_HANDLER(sjmp_handler)
 	return 0;
 }
 
+/* operation: MOVC A, @A+DPTR
+ */
+DEFINE_HANDLER(movc_dptr_handler)
+{
+	uint16_t addr = ACC + DPTR;
+
+	/* check if the target address is outside valid program memory */
+	if (addr >= m->pmem_len)
+		return EMU51_PMEM_OUT_OF_RANGE;
+
+	ACC = m->pmem[addr];
+
+	return 0;
+}
+
+/* operation: MOVC A, @A+PC
+ */
+DEFINE_HANDLER(movc_pc_handler)
+{
+	uint16_t addr = ACC + PC;
+
+	/* check if the target address is outside valid program memory */
+	if (addr >= m->pmem_len)
+		return EMU51_PMEM_OUT_OF_RANGE;
+
+	ACC = m->pmem[addr];
+
+	return 0;
+}
+
 /* macro to define an instruction */
 #define INSTR(op, mne, b, c, h) {.opcode = op, .bytes = b, .cycles = c, \
 	.handler = h}
@@ -225,7 +255,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	INSTR(0x80, "SJMP", 2, 2, sjmp_handler),
 	INSTR(0x81, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0x82),
-	NOT_IMPLEMENTED(0x83),
+	INSTR(0x83, "MOVC", 1, 1, movc_pc_handler),
 	NOT_IMPLEMENTED(0x84),
 	NOT_IMPLEMENTED(0x85),
 	NOT_IMPLEMENTED(0x86),
@@ -241,7 +271,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x90),
 	NOT_IMPLEMENTED(0x91),
 	NOT_IMPLEMENTED(0x92),
-	NOT_IMPLEMENTED(0x93),
+	INSTR(0x93, "MOVC", 1, 2, movc_dptr_handler),
 	NOT_IMPLEMENTED(0x94),
 	NOT_IMPLEMENTED(0x95),
 	NOT_IMPLEMENTED(0x96),
