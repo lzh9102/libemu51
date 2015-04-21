@@ -54,6 +54,23 @@ DEFINE_HANDLER(ljmp_handler)
 	return 0;
 }
 
+/* operation: SJMP
+ * function: relative jump -128~+127 bytes
+ */
+DEFINE_HANDLER(sjmp_handler)
+{
+	int8_t reladdr = OPERAND1;
+
+	/* FIXME: what happens when jumping across program memory border
+	 *	       (e.g. PC == 0, reladdr == -1)?
+	 * 1. wraps over? [current implementation]
+	 * 2. error?
+	 */
+	PC += reladdr;
+
+	return 0;
+}
+
 /* macro to define an instruction */
 #define INSTR(op, mne, b, c, h) {.opcode = op, .bytes = b, .cycles = c, \
 	.handler = h}
@@ -193,7 +210,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x7d),
 	NOT_IMPLEMENTED(0x7e),
 	NOT_IMPLEMENTED(0x7f),
-	NOT_IMPLEMENTED(0x80),
+	INSTR(0x80, "SJMP", 2, 2, sjmp_handler),
 	INSTR(0x81, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0x82),
 	NOT_IMPLEMENTED(0x83),

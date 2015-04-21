@@ -306,6 +306,43 @@ void test_ljmp(void **state)
 	free_test_data(data);
 }
 
+void test_sjmp(void **state)
+{
+	testdata *data = alloc_test_data();
+	emu51 *m = data->m;
+
+	write_random_data_to_memories(data);
+
+	/* save the original state */
+	testdata *orig_data = dup_test_data(data);
+
+	/* sjmp forward */
+	uint8_t opcode = 0x80;
+	uint8_t reladdr = 127; /* signed 127 */
+	data->pmem[0] = opcode;
+	data->pmem[1] = reladdr;
+	m->pc = 0;
+	const emu51_instr *instr = _emu51_decode_instr(opcode);
+	int err = instr->handler(instr, data->pmem, data->m);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 127);
+	assert_emu51_all_ram_equal(data, orig_data);
+
+	/* sjmp backwards */
+	opcode = 0x80;
+	reladdr = 0x80; /* signed -128 */
+	data->pmem[254] = opcode;
+	data->pmem[255] = reladdr;
+	m->pc = 254;
+	instr = _emu51_decode_instr(opcode);
+	err = instr->handler(instr, &data->pmem[254], data->m);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 254 - 128);
+
+	free_test_data(orig_data);
+	free_test_data(data);
+}
+
 /* end of test functions */
 
 int main()
@@ -314,6 +351,7 @@ int main()
 		cmocka_unit_test(test_nop),
 		cmocka_unit_test(test_ajmp),
 		cmocka_unit_test(test_ljmp),
+		cmocka_unit_test(test_sjmp),
 	};
 	/* don't use setup and teardown as cmocka doesn't report memory bugs in them
 	 */
