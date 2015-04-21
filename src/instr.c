@@ -21,6 +21,9 @@
 #define OPERAND2 code[2]
 #define PC m->pc
 
+#define DPTR ((m->sfr[SFR_DPH] << 8) | m->sfr[SFR_DPL])
+#define ACC m->sfr[SFR_ACC]
+
 /* operation: NOP
  * function: consume 1 cycle and do nothing
  */
@@ -41,6 +44,15 @@ DEFINE_HANDLER(ajmp_handler)
 	PC &= 0xf800; /* clear the lower 11 bits */
 	PC |= (page << 8) | OPERAND1; /* set the lower 11 bits to target */
 
+	return 0;
+}
+
+/* operation: JMP
+ * function: jump to the sum of DPTR and ACC
+ */
+DEFINE_HANDLER(jmp_handler)
+{
+	PC = DPTR + ACC;
 	return 0;
 }
 
@@ -197,7 +209,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x70),
 	NOT_IMPLEMENTED(0x71),
 	NOT_IMPLEMENTED(0x72),
-	NOT_IMPLEMENTED(0x73),
+	INSTR(0x73, "JMP", 1, 2, jmp_handler),
 	NOT_IMPLEMENTED(0x74),
 	NOT_IMPLEMENTED(0x75),
 	NOT_IMPLEMENTED(0x76),

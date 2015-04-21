@@ -278,6 +278,35 @@ void test_ajmp(void **state)
 	free_test_data(data);
 }
 
+void test_jmp(void **state)
+{
+	testdata *data = alloc_test_data();
+	emu51 *m = data->m;
+
+	write_random_data_to_memories(data);
+
+	/* jmp */
+	uint8_t opcode = 0x73;
+	uint16_t dptr = 0x1234;
+	uint8_t acc = 32;
+	data->pmem[0] = opcode;
+	m->sfr[SFR_ACC] = acc;
+	m->sfr[SFR_DPL] = LOWER_BYTE(dptr);
+	m->sfr[SFR_DPH] = UPPER_BYTE(dptr);
+
+	testdata *orig_data = dup_test_data(data);
+
+	const emu51_instr *instr = _emu51_decode_instr(opcode);
+	assert_int_equal(instr->bytes, 1);
+	int err = instr->handler(instr, data->pmem, data->m);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, dptr + acc);
+	assert_emu51_all_ram_equal(data, orig_data);
+
+	free_test_data(data);
+	free_test_data(orig_data);
+}
+
 void test_ljmp(void **state)
 {
 	testdata *data = alloc_test_data();
@@ -350,6 +379,7 @@ int main()
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_nop),
 		cmocka_unit_test(test_ajmp),
+		cmocka_unit_test(test_jmp),
 		cmocka_unit_test(test_ljmp),
 		cmocka_unit_test(test_sjmp),
 	};
