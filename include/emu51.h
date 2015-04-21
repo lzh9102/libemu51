@@ -16,8 +16,13 @@ typedef struct emu51_features
 	unsigned int timer2:1; /**< has timer2 */
 } emu51_features;
 
-/* forward declaration: used in struct emu51 */
-typedef struct emu51_callbacks emu51_callbacks;
+/** emulator callbacks
+ *
+ * This structure stores callback pointers.
+ */
+typedef struct emu51_callbacks
+{
+} emu51_callbacks;
 
 /** 8051/8052 emulator structure
  *
@@ -56,8 +61,7 @@ typedef struct emu51
 
 	emu51_features features; /**< Additional features of the emulator. */
 
-	emu51_callbacks *callbacks; /**< structure to store callback pointers,
-													 leave it NULL if not used */
+	emu51_callbacks callbacks; /**< callback pointers */
 
 	/** Pointer for the user to store arbitrary data.
 	 *
@@ -66,14 +70,6 @@ typedef struct emu51
 	 */
 	void *userdata;
 } emu51;
-
-/** emulator callbacks
- *
- * This structure stores callback pointers.
- */
-typedef struct emu51_callbacks
-{
-} emu51_callbacks;
 
 /** Indices of SFRs in the sfr buffer (@c emu51.sfr). */
 enum emu51_sfr_index
