@@ -1,15 +1,30 @@
 #include <emu51.h>
 #include "instr.h"
 
+/* Helper functions */
+
 /* Implementations of 8051/8052 instructions.
  *
  * The functions should return 0 on success or an error code on error.
  */
 
+/* These macros are used for writing instruction handlers. By using these
+ * macros, it is possible to change the handler signature (e.g. for performance
+ * reasons) without replacing each handler function.
+ *
+ * The emulator object should always be called m in the argument list.
+ */
+#define DEFINE_HANDLER(name) static int name ( \
+		const emu51_instr *instr, const uint8_t *code, emu51 *m)
+#define OPCODE code[0]
+#define OPERAND1 code[1]
+#define OPERAND2 code[2]
+#define PC m->pc
+
 /* operation: NOP
  * function: consume 1 cycle and do nothing
  */
-static int nop_handler(const emu51_instr *instr, const uint8_t *code, emu51 *m)
+DEFINE_HANDLER(nop_handler)
 {
 	return 0;
 }
@@ -17,14 +32,14 @@ static int nop_handler(const emu51_instr *instr, const uint8_t *code, emu51 *m)
 /* operation: AJMP
  * function: absolute jump within 2k block
  */
-static int ajmp_handler(const emu51_instr *instr, const uint8_t *code, emu51 *m)
+DEFINE_HANDLER(ajmp_handler)
 {
 	/* the first 3 bit of the opcode is the page number */
-	int page = (code[0] >> 5) & 0x7;
+	int page = (OPCODE >> 5) & 0x7;
 
-	/* replace the lower 11 bits of PC with {page, code[1]} */
-	m->pc &= 0xf800; /* clear the lower 11 bits */
-	m->pc |= (page << 8) | code[1]; /* set the lower 11 bits to target */
+	/* replace the lower 11 bits of PC with {page, OPERAND1} */
+	PC &= 0xf800; /* clear the lower 11 bits */
+	PC |= (page << 8) | OPERAND1; /* set the lower 11 bits to target */
 
 	return 0;
 }
@@ -32,10 +47,10 @@ static int ajmp_handler(const emu51_instr *instr, const uint8_t *code, emu51 *m)
 /* operation: LJMP
  * function: long jump
  */
-static int ljmp_handler(const emu51_instr *instr, const uint8_t *code, emu51 *m)
+DEFINE_HANDLER(ljmp_handler)
 {
-	uint16_t target_addr = (code[1] << 8) | code[2];
-	m->pc = target_addr;
+	uint16_t target_addr = (OPERAND1 << 8) | OPERAND2;
+	PC = target_addr;
 	return 0;
 }
 
