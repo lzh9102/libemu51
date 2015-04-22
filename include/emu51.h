@@ -31,7 +31,7 @@ typedef struct emu51_callbacks
 typedef struct emu51
 {
 	const uint8_t *pmem; /**< Read-only program memory */
-	int pmem_len; /**< Size of the @c pmem buffer,
+	long pmem_len; /**< Size of the @c pmem buffer,
 								must be power of 2 within 1k~64k */
 
 	/** Lower internal memory (address 0~127).
@@ -54,7 +54,7 @@ typedef struct emu51
 	uint8_t *sfr;
 
 	uint8_t *xram; /**< External memory, leave it NULL if not used */
-	int xram_len; /**< Size of the @c xram buffer,
+	long xram_len; /**< Size of the @c xram buffer,
 								must be power of 2 within 1k~64k */
 
 	uint16_t pc; /**< Program counter */
