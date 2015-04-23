@@ -160,14 +160,17 @@ void write_random_data_to_memories(testdata *data)
 	assert_emu51_iram_equal(data1, data2); \
 	assert_emu51_xram_equal(data1, data2); } while (0)
 
-#define INSTR1(opcode) (opcode)
-#define INSTR2(opcode, op1) (((op1) << 8) | (opcode))
-#define INSTR3(opcode, op1, op2) (((op1) << 16) | ((op2) << 8) | (opcode))
+/* the highest byte (0xff000000) is used to store instruction length */
+#define INSTR1(opcode) ((0x01 << 24) | (opcode))
+#define INSTR2(opcode, op1) ((0x02 << 24) | ((op1) << 8) | (opcode))
+#define INSTR3(opcode, op1, op2) ((0x03 << 24) | \
+		((op1) << 16) | ((op2) << 8) | (opcode))
 
 /* put the instruction in pc and run it */
 int run_instr(uint32_t instr, testdata *data)
 {
-	uint8_t buffer[4];
+	uint8_t instr_length = (instr >> 24) & 0xff;
+	uint8_t buffer[3];
 
 	buffer[0] = instr & 0xff;
 	buffer[1] = (instr >> 8) & 0xff;
@@ -176,6 +179,7 @@ int run_instr(uint32_t instr, testdata *data)
 	uint8_t opcode = buffer[0];
 
 	const emu51_instr *instr_info = _emu51_decode_instr(opcode);
+	assert_int_equal(instr_info->bytes, instr_length);
 	assert_non_null(instr_info->handler);
 
 	return instr_info->handler(instr_info, buffer, data->m);
@@ -186,7 +190,6 @@ int run_instr(uint32_t instr, testdata *data)
 void test_nop(void **state)
 {
 	testdata *data = alloc_test_data();
-	emu51 *m = data->m;
 
 	/* fill in random data to emulator memory */
 	write_random_data_to_memories(data);
@@ -197,9 +200,7 @@ void test_nop(void **state)
 	/* save the original state */
 	testdata *orig_data = dup_test_data(data);
 
-	/* execute nop */
-	const emu51_instr *instr = _emu51_decode_instr(0x00); /* NOP */
-	instr->handler(instr, &m->pmem[0], m);
+	run_instr(INSTR1(0x00), data);
 
 	/* nop shouldn't change any of the SFRs, iram or xram */
 	assert_emu51_all_ram_equal(data, orig_data);
@@ -218,11 +219,7 @@ void test_ajmp(void **state)
 
 #define TEST_AJMP(op_, pc_, page_, second_byte_, target_) do { \
 	data->m->pc = pc_; \
-	data->pmem[0] = op_; \
-	data->pmem[1] = second_byte_; \
-	const emu51_instr *instr = _emu51_decode_instr(op_); \
-	assert_non_null(instr->handler); \
-	instr->handler(instr, data->pmem, data->m); \
+	run_instr(INSTR2(op_, second_byte_), data); \
 	assert_emu51_all_ram_equal(data, orig_data); \
 	assert_int_equal(data->m->pc, target_); } while (0)
 
@@ -322,9 +319,7 @@ void test_jmp(void **state)
 
 	testdata *orig_data = dup_test_data(data);
 
-	const emu51_instr *instr = _emu51_decode_instr(opcode);
-	assert_int_equal(instr->bytes, 1);
-	int err = instr->handler(instr, data->pmem, data->m);
+	int err = run_instr(INSTR1(0x73), data);
 	assert_int_equal(err, 0);
 	assert_int_equal(m->pc, dptr + acc);
 	assert_emu51_all_ram_equal(data, orig_data);
@@ -410,17 +405,17 @@ void test_movc()
 	m->sfr[SFR_ACC] = 7;
 	data->pmem[150] = 1; /* this is not the data to read */
 	data->pmem[157] = 2; /* this is the data to read (DPTR+ACC) */
-	err = run_instr(opcode, data);
+	err = run_instr(INSTR1(opcode), data);
 	assert_int_equal(err, 0);
 	assert_int_equal(m->sfr[SFR_ACC], 2);
 
 	/* test boundary condition */
 	SET_DPTR(m, PMEM_SIZE-1); /* in bounds */
 	m->sfr[SFR_ACC] = 0;
-	err = run_instr(opcode, data);
+	err = run_instr(INSTR1(opcode), data);
 	assert_int_equal(err, 0);
 	SET_DPTR(m, PMEM_SIZE); /* out of bounds */
-	err = run_instr(opcode, data);
+	err = run_instr(INSTR1(opcode), data);
 	assert_int_equal(err, EMU51_PMEM_OUT_OF_RANGE);
 
 	SET_DPTR(m, 0);
@@ -431,17 +426,17 @@ void test_movc()
 	m->sfr[SFR_ACC] = 7;
 	data->pmem[140] = 1; /* this is not the data to read */
 	data->pmem[147] = 2; /* this is the data to read (DPTR+ACC) */
-	err = run_instr(opcode, data);
+	err = run_instr(INSTR1(opcode), data);
 	assert_int_equal(err, 0);
 	assert_int_equal(m->sfr[SFR_ACC], 2);
 
 	/* test boundary condition */
 	m->pc = PMEM_SIZE - 1; /* in bounds */
 	m->sfr[SFR_ACC] = 0;
-	err = run_instr(opcode, data);
+	err = run_instr(INSTR1(opcode), data);
 	assert_int_equal(err, 0);
 	m->pc = PMEM_SIZE; /* out of bounds */
-	err = run_instr(opcode, data);
+	err = run_instr(INSTR1(opcode), data);
 	assert_int_equal(err, EMU51_PMEM_OUT_OF_RANGE);
 
 	free_test_data(data);
