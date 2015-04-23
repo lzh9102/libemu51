@@ -340,11 +340,10 @@ void test_ljmp(void **state)
 	/* ljmp */
 	uint8_t opcode = 0x02;
 	uint16_t target_addr = 0x1234;
-	data->pmem[0] = opcode;
-	data->pmem[1] = UPPER_BYTE(target_addr);
-	data->pmem[2] = LOWER_BYTE(target_addr);
-	const emu51_instr *instr = _emu51_decode_instr(opcode);
-	instr->handler(instr, data->pmem, data->m);
+	int err = run_instr(
+			INSTR3(opcode, UPPER_BYTE(target_addr), LOWER_BYTE(target_addr)),
+			data);
+	assert_int_equal(err, 0);
 
 	/* ljmp shouldn't change any of the memories */
 	assert_emu51_all_ram_equal(data, orig_data);
@@ -369,11 +368,8 @@ void test_sjmp(void **state)
 	/* sjmp forward */
 	uint8_t opcode = 0x80;
 	uint8_t reladdr = 127; /* signed 127 */
-	data->pmem[0] = opcode;
-	data->pmem[1] = reladdr;
 	m->pc = 0;
-	const emu51_instr *instr = _emu51_decode_instr(opcode);
-	int err = instr->handler(instr, data->pmem, data->m);
+	int err = run_instr(INSTR2(opcode, reladdr), data);
 	assert_int_equal(err, 0);
 	assert_int_equal(m->pc, 127);
 	assert_emu51_all_ram_equal(data, orig_data);
@@ -381,11 +377,8 @@ void test_sjmp(void **state)
 	/* sjmp backwards */
 	opcode = 0x80;
 	reladdr = 0x80; /* signed -128 */
-	data->pmem[254] = opcode;
-	data->pmem[255] = reladdr;
 	m->pc = 254;
-	instr = _emu51_decode_instr(opcode);
-	err = instr->handler(instr, &data->pmem[254], data->m);
+	err = run_instr(INSTR2(opcode, reladdr), data);
 	assert_int_equal(err, 0);
 	assert_int_equal(m->pc, 254 - 128);
 
