@@ -170,12 +170,13 @@ int run_instr(uint32_t instr, testdata *data)
 	uint8_t buffer[4];
 
 	buffer[0] = instr & 0xff;
-	buffer[1] = instr & 0xff00;
-	buffer[2] = instr & 0xff0000;
+	buffer[1] = (instr >> 8) & 0xff;
+	buffer[2] = (instr >> 16) & 0xff;
 
 	uint8_t opcode = buffer[0];
 
 	const emu51_instr *instr_info = _emu51_decode_instr(opcode);
+	assert_non_null(instr_info->handler);
 
 	return instr_info->handler(instr_info, buffer, data->m);
 }
