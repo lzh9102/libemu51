@@ -39,23 +39,23 @@ typedef struct emu51_callbacks
 	 */
 	void (*sfr_update)(emu51 *m, uint8_t index);
 
-	/** Internal memory update callback.
+	/** Internal RAM update callback.
 	 *
-	 * Called after a write operation to the internal memory.
+	 * Called after a write operation to the internal RAM.
 	 *
 	 * @param m the emulator instance
 	 * @param addr address of the written memory location (0~255).
 	 */
-	void (*imem_update)(emu51 *m, uint8_t addr);
+	void (*iram_update)(emu51 *m, uint8_t addr);
 
-	/** External memory update callback.
+	/** External RAM update callback.
 	 *
-	 * Called after a write operation to the exteranl memory.
+	 * Called after a write operation to the exteranl RAM.
 	 *
 	 * @param m the emulator instance
 	 * @param addr address of the written memory location (0~65535).
 	 */
-	void (*xmem_update)(emu51 *m, uint16_t addr);
+	void (*xram_update)(emu51 *m, uint16_t addr);
 
 	/** I/O write callback.
 	 *
