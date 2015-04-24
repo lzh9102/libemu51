@@ -148,9 +148,9 @@ typedef struct emu51
 
 	uint16_t pc; /**< Program counter */
 
-	emu51_features features; /**< Additional features of the emulator. */
+	emu51_features feature; /**< Additional features of the emulator. */
 
-	emu51_callbacks callbacks; /**< callback pointers */
+	emu51_callbacks callback; /**< callback pointers */
 
 	/** Pointer for the user to store arbitrary data.
 	 *
