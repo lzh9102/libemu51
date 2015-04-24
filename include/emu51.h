@@ -160,7 +160,7 @@ typedef struct emu51
 	void *userdata;
 } emu51;
 
-/** Indices of SFRs in the sfr buffer (@c emu51.sfr). */
+/** Indices of SFRs in the sfr buffer (@ref emu51::sfr). */
 enum emu51_sfr_index
 {
 	/* The SFR buffer is 128 bytes, but the memory-mapped address of the SFRs
@@ -208,10 +208,11 @@ enum emu51_psw_mask
 	PSW_C  = 0x80,  /* carry */
 };
 
+/** Error codes returned by the emulator. */
 enum emu51_errno
 {
-	EMU51_SUCCESS = 0,
-	EMU51_PMEM_OUT_OF_RANGE,
+	EMU51_SUCCESS = 0, /**< There is no error */
+	EMU51_PMEM_OUT_OF_RANGE, /**< Trying to read beyond the program memory */
 };
 
 /** Reset the emulator.
