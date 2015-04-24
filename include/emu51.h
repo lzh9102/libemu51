@@ -24,7 +24,8 @@ typedef struct emu51 emu51;
 
 /** Emulator event callbacks.
  *
- * This structure stores callback pointers.
+ * This structure stores callback pointers. The first arguments of any callback
+ * function must be an pointer to @ref emu51.
  */
 typedef struct emu51_callbacks
 {

@@ -24,6 +24,10 @@
 #define DPTR ((m->sfr[SFR_DPH] << 8) | m->sfr[SFR_DPL])
 #define ACC m->sfr[SFR_ACC]
 
+/* Call the callback if it is not NULL. */
+#define CALLBACK(cb_name, ...) do { \
+	if (m->callback.cb_name) m->callback.cb_name(m, __VA_ARGS__); } while (0)
+
 /* operation: NOP
  * function: consume 1 cycle and do nothing
  */
@@ -94,6 +98,7 @@ DEFINE_HANDLER(movc_dptr_handler)
 		return EMU51_PMEM_OUT_OF_RANGE;
 
 	ACC = m->pmem[addr];
+	CALLBACK(sfr_update, SFR_ACC);
 
 	return 0;
 }
@@ -109,6 +114,7 @@ DEFINE_HANDLER(movc_pc_handler)
 		return EMU51_PMEM_OUT_OF_RANGE;
 
 	ACC = m->pmem[addr];
+	CALLBACK(sfr_update, SFR_ACC);
 
 	return 0;
 }

@@ -32,7 +32,48 @@ typedef struct testdata
 	uint8_t *iram_lower; /* lower internal RAM, 128 bytes */
 	uint8_t *iram_upper; /* lower internal RAM, 128 bytes */
 	uint8_t *xram; /* external RAM */
+
+	/* Bitmap represent if each callback is called. Each bit represents a
+	 * callback. */
+#define CB_SFR_UPDATE  (1<<0)
+#define CB_IRAM_UPDATE (1<<1)
+#define CB_XRAM_UPDATE (1<<2)
+#define CB_IO_WRITE (1<<3)
+#define CB_IO_READ (1<<3)
+	uint16_t callback_called;
 } testdata;
+
+/* callback handlers */
+
+void callback_sfr_update(emu51 *m, uint8_t index)
+{
+	testdata *data = m->userdata;
+	data->callback_called |= CB_SFR_UPDATE;
+}
+
+void callback_iram_update(emu51 *m, uint8_t addr)
+{
+	testdata *data = m->userdata;
+	data->callback_called |= CB_IRAM_UPDATE;
+}
+
+void callback_xram_update(emu51 *m, uint16_t addr)
+{
+	testdata *data = m->userdata;
+	data->callback_called |= CB_XRAM_UPDATE;
+}
+
+void callback_io_write(emu51 *m, uint8_t portno, uint8_t bitmask, uint8_t data)
+{
+	testdata *td = m->userdata;
+	td->callback_called |= CB_IO_WRITE;
+}
+
+void callback_io_read(emu51 *m, uint8_t portno, uint8_t bitmask, uint8_t *data)
+{
+	testdata *td = m->userdata;
+	td->callback_called |= CB_IO_READ;
+}
 
 /* Create emulator and buffers for testing.
  *
@@ -71,6 +112,16 @@ testdata *alloc_test_data()
 	data->m->xram_len = XRAM_SIZE;
 	emu51_reset(data->m);
 
+	/* callbacks */
+	emu51 *m = data->m;
+	m->callback.sfr_update = callback_sfr_update;
+	m->callback.iram_update = callback_iram_update;
+	m->callback.xram_update = callback_xram_update;
+	m->callback.io_write = callback_io_write;
+	m->callback.io_read = callback_io_read;
+
+	data->m->userdata = data; /* make it possible to find data from m */
+
 	return data;
 }
 
@@ -93,6 +144,7 @@ testdata *dup_test_data(const testdata *orig)
 	data->m->iram_lower = data->iram_lower;
 	data->m->iram_upper = data->iram_upper;
 	data->m->xram = data->xram;
+	data->m->userdata = data;
 
 	/* copy the content of buffers */
 	memcpy(data->sfr, orig->sfr, 128);
@@ -160,6 +212,9 @@ void write_random_data_to_memories(testdata *data)
 	assert_emu51_iram_equal(data1, data2); \
 	assert_emu51_xram_equal(data1, data2); } while (0)
 
+#define assert_emu51_callbacks(data, callback_bits) \
+	assert_int_equal(data->callback_called, callback_bits)
+
 /* the highest byte (0xff000000) is used to store instruction length */
 #define INSTR1(opcode) ((0x01 << 24) | (opcode))
 #define INSTR2(opcode, op1) ((0x02 << 24) | ((op1) << 8) | (opcode))
@@ -169,6 +224,9 @@ void write_random_data_to_memories(testdata *data)
 /* put the instruction in pc and run it */
 int run_instr(uint32_t instr, testdata *data)
 {
+	/* reset callback */
+	data->callback_called = 0;
+
 	uint8_t instr_length = (instr >> 24) & 0xff;
 	uint8_t buffer[3];
 
@@ -205,6 +263,9 @@ void test_nop(void **state)
 	/* nop shouldn't change any of the SFRs, iram or xram */
 	assert_emu51_all_ram_equal(data, orig_data);
 
+	/* nop shouldn't trigger any callbacks */
+	assert_emu51_callbacks(data, 0);
+
 	free_test_data(orig_data);
 	free_test_data(data);
 }
@@ -221,7 +282,8 @@ void test_ajmp(void **state)
 	data->m->pc = pc_; \
 	run_instr(INSTR2(op_, second_byte_), data); \
 	assert_emu51_all_ram_equal(data, orig_data); \
-	assert_int_equal(data->m->pc, target_); } while (0)
+	assert_int_equal(data->m->pc, target_); \
+	assert_emu51_callbacks(data, 0); } while (0)
 
 	/* AJMP page0 (0x01)
 	 *
@@ -323,6 +385,7 @@ void test_jmp(void **state)
 	assert_int_equal(err, 0);
 	assert_int_equal(m->pc, dptr + acc);
 	assert_emu51_all_ram_equal(data, orig_data);
+	assert_emu51_callbacks(data, 0);
 
 	free_test_data(data);
 	free_test_data(orig_data);
@@ -351,6 +414,9 @@ void test_ljmp(void **state)
 	/* ljmp should set the pc to the target address */
 	assert_int_equal(data->m->pc, target_addr);
 
+	/* no callback is called */
+	assert_emu51_callbacks(data, 0);
+
 	free_test_data(orig_data);
 	free_test_data(data);
 }
@@ -373,6 +439,7 @@ void test_sjmp(void **state)
 	assert_int_equal(err, 0);
 	assert_int_equal(m->pc, 127);
 	assert_emu51_all_ram_equal(data, orig_data);
+	assert_emu51_callbacks(data, 0);
 
 	/* sjmp backwards */
 	opcode = 0x80;
@@ -381,6 +448,7 @@ void test_sjmp(void **state)
 	err = run_instr(INSTR2(opcode, reladdr), data);
 	assert_int_equal(err, 0);
 	assert_int_equal(m->pc, 254 - 128);
+	assert_emu51_callbacks(data, 0);
 
 	free_test_data(orig_data);
 	free_test_data(data);
@@ -407,9 +475,12 @@ void test_movc()
 	m->sfr[SFR_ACC] = 0;
 	err = run_instr(INSTR1(opcode), data);
 	assert_int_equal(err, 0);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+
 	SET_DPTR(m, PMEM_SIZE); /* out of bounds */
 	err = run_instr(INSTR1(opcode), data);
 	assert_int_equal(err, EMU51_PMEM_OUT_OF_RANGE);
+	assert_emu51_callbacks(data, 0);
 
 	SET_DPTR(m, 0);
 
@@ -422,15 +493,19 @@ void test_movc()
 	err = run_instr(INSTR1(opcode), data);
 	assert_int_equal(err, 0);
 	assert_int_equal(m->sfr[SFR_ACC], 2);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
 
 	/* test boundary condition */
 	m->pc = PMEM_SIZE - 1; /* in bounds */
 	m->sfr[SFR_ACC] = 0;
 	err = run_instr(INSTR1(opcode), data);
 	assert_int_equal(err, 0);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+
 	m->pc = PMEM_SIZE; /* out of bounds */
 	err = run_instr(INSTR1(opcode), data);
 	assert_int_equal(err, EMU51_PMEM_OUT_OF_RANGE);
+	assert_emu51_callbacks(data, 0);
 
 	free_test_data(data);
 }
