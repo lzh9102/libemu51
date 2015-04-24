@@ -89,6 +89,7 @@ void test_step(void **state)
 	assert_int_equal(m.pc, 4096);
 	error = emu51_step(&m, NULL); /* pc == 4096, this is not OK */
 	assert_int_equal(error, EMU51_PMEM_OUT_OF_RANGE);
+	assert_int_equal(m.pc, 4096); /* pc should not change on error */
 
 	/* 2-byte instruction on byte 4094:4095 is OK */
 	pmem[4094] = 0x01; /* AJMP, 2-byte instruction */
@@ -101,6 +102,7 @@ void test_step(void **state)
 	m.pc = 4095;
 	error = emu51_step(&m, NULL);
 	assert_int_equal(error, EMU51_PMEM_OUT_OF_RANGE);
+	assert_int_equal(m.pc, 4095); /* pc should not change on error */
 
 	free(pmem);
 	free(xram);

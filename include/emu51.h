@@ -141,6 +141,8 @@ void emu51_reset(emu51 *m);
  *                     NULL to ignore the value.
  *
  * @return Returns 0 if success; returns an error number on failure.
+ * @note If an error occurs (return value != 0), the program counter (m->pc)
+ *       is not incremented and points to the offending address.
  */
 int emu51_step(emu51 *m, int *cycles);
 

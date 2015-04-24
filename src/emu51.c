@@ -25,13 +25,18 @@ int emu51_step(emu51 *m, int *cycles)
 	if (m->pc + instr->bytes > m->pmem_len)
 		return EMU51_PMEM_OUT_OF_RANGE;
 
-	/* increment pc */
+	/* Increment pc and save the old pc in case an error occurs.
+	 * FIXME: does the pc wrap around at the end of program memory?
+	 */
+	uint16_t old_pc = m->pc;
 	m->pc += instr->bytes;
 
 	/* invoke instruction handler */
 	int instr_error = instr->handler(instr, code, m);
-	if (instr_error)
+	if (instr_error) {
+		m->pc = old_pc; /* restore pc when an error occurs */
 		return instr_error;
+	}
 
 	/* return the cycle count of the instruction */
 	if (cycles)
