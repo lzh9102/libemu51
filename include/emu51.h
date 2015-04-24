@@ -20,12 +20,97 @@ typedef struct emu51_features
 	unsigned int timer2:1; /**< has timer2 */
 } emu51_features;
 
-/** emulator callbacks
+typedef struct emu51 emu51;
+
+/** Emulator event callbacks.
  *
  * This structure stores callback pointers.
  */
 typedef struct emu51_callbacks
 {
+	/** SFR update callback.
+	 *
+	 * Called after a SFR is written, regardless of whether the new value is
+	 * identical to the old value. Note that I/O operations are also included.
+	 *
+	 * @param m the emulator instance
+	 * @param addr index of the written SFR in the sfr buffer
+	 * @see emu51_sfr_index
+	 */
+	void (*sfr_update)(emu51 *m, uint8_t index);
+
+	/** Internal memory update callback.
+	 *
+	 * Called after a write operation to the internal memory.
+	 *
+	 * @param m the emulator instance
+	 * @param addr address of the written memory location (0~255).
+	 */
+	void (*imem_update)(emu51 *m, uint8_t addr);
+
+	/** External memory update callback.
+	 *
+	 * Called after a write operation to the exteranl memory.
+	 *
+	 * @param m the emulator instance
+	 * @param addr address of the written memory location (0~65535).
+	 */
+	void (*xmem_update)(emu51 *m, uint16_t addr);
+
+	/** I/O write callback.
+	 *
+	 * Called when writing to an I/O port (P0~P3). 8051 supports both writing to
+	 * all 8 bits to the port simultaneously and writing to a single bit to the
+	 * port. The argument @a bitmask indicates which bits are written, and only
+	 * those bits in @a data are valid. Examples are given below for how this
+	 * function will be called.
+	 *
+	 * ### Example 1: the emulator writes `0x80` to `P1`
+	 *
+	 * In this case, all 8 bits in `P1` are written, so the bitmask is `0xff`.
+	 * The callback is called with arguments portno=`1`, bitmask=`0xff`,
+	 * data=`0x80`.
+	 *
+	 * ### Example 2: the emulator writes `1` to `P2.3`.
+	 *
+	 * In this case, only the 3rd bit (zero-based) of P2 is written, so the
+	 * bitmask is `0x08`. The callback is called with arguments portno=`2`,
+	 * bitmask=`0x08`, data=`0x08`.
+	 *
+	 * ### Example 3: the emulator writes `0` to `P3.0`.
+	 *
+	 * In this case, only the zero-th bit of P3 is written, so the bitmask is
+	 * `0x01`. The callback is called with arguments portno=`3`, bitmask=`0x01`,
+	 * data=`0x00`.
+	 *
+	 * @param m the emulator instance
+	 * @param portno I/O port number (0~3).
+	 * @param bitmask which bits are written
+	 * @param data data to be written; only the bits selected by @a bitmask are
+	 *             valid.
+	 * @see io_read
+	 */
+	void (*io_write)(emu51 *m, uint8_t portno, uint8_t bitmask, uint8_t data);
+
+	/** I/O read callback.
+	 *
+	 * Called before reading from an I/O port (P0~P3). The arguments are similar
+	 * to that of @ref io_write except for the last argument. Instead of plain
+	 * value, the data is passed as a pointer so that the handler can modify
+	 * the data to be seen by the emulator. Before this callback is called,
+	 * `data` is filled with the port value in SFR (e.g. `m->sfr[SFR_P0]` for
+	 * port 0).
+	 *
+	 * @param m the emulator instance
+	 * @param portno I/O port number (0~3).
+	 * @param bitmask which bits are read
+	 * @param[in,out] data data to be received, only the bits selected by
+	 *                     @a bitmask are important.
+	 *
+	 * @see io_write
+	 */
+	void (*io_read)(emu51 *m, uint8_t portno, uint8_t bitmask, uint8_t *data);
+
 } emu51_callbacks;
 
 /** 8051/8052 emulator structure
