@@ -49,30 +49,39 @@ void callback_sfr_update(emu51 *m, uint8_t index)
 {
 	testdata *data = m->userdata;
 	data->callback_called |= CB_SFR_UPDATE;
+	check_expected(index);
 }
 
 void callback_iram_update(emu51 *m, uint8_t addr)
 {
 	testdata *data = m->userdata;
 	data->callback_called |= CB_IRAM_UPDATE;
+	check_expected(addr);
 }
 
 void callback_xram_update(emu51 *m, uint16_t addr)
 {
 	testdata *data = m->userdata;
 	data->callback_called |= CB_XRAM_UPDATE;
+	check_expected(addr);
 }
 
 void callback_io_write(emu51 *m, uint8_t portno, uint8_t bitmask, uint8_t data)
 {
 	testdata *td = m->userdata;
 	td->callback_called |= CB_IO_WRITE;
+	check_expected(portno);
+	check_expected(bitmask);
+	check_expected(data);
 }
 
 void callback_io_read(emu51 *m, uint8_t portno, uint8_t bitmask, uint8_t *data)
 {
 	testdata *td = m->userdata;
 	td->callback_called |= CB_IO_READ;
+	check_expected(portno);
+	check_expected(bitmask);
+	check_expected(data);
 }
 
 /* Create emulator and buffers for testing.
@@ -466,13 +475,16 @@ void test_movc()
 	m->sfr[SFR_ACC] = 7;
 	data->pmem[150] = 1; /* this is not the data to read */
 	data->pmem[157] = 2; /* this is the data to read (DPTR+ACC) */
+	expect_value(callback_sfr_update, index, SFR_ACC);
 	err = run_instr(INSTR1(opcode), data);
 	assert_int_equal(err, 0);
 	assert_int_equal(m->sfr[SFR_ACC], 2);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
 
 	/* test boundary condition */
 	SET_DPTR(m, PMEM_SIZE-1); /* in bounds */
 	m->sfr[SFR_ACC] = 0;
+	expect_value(callback_sfr_update, index, SFR_ACC);
 	err = run_instr(INSTR1(opcode), data);
 	assert_int_equal(err, 0);
 	assert_emu51_callbacks(data, CB_SFR_UPDATE);
@@ -490,6 +502,7 @@ void test_movc()
 	m->sfr[SFR_ACC] = 7;
 	data->pmem[140] = 1; /* this is not the data to read */
 	data->pmem[147] = 2; /* this is the data to read (DPTR+ACC) */
+	expect_value(callback_sfr_update, index, SFR_ACC);
 	err = run_instr(INSTR1(opcode), data);
 	assert_int_equal(err, 0);
 	assert_int_equal(m->sfr[SFR_ACC], 2);
@@ -498,6 +511,7 @@ void test_movc()
 	/* test boundary condition */
 	m->pc = PMEM_SIZE - 1; /* in bounds */
 	m->sfr[SFR_ACC] = 0;
+	expect_value(callback_sfr_update, index, SFR_ACC);
 	err = run_instr(INSTR1(opcode), data);
 	assert_int_equal(err, 0);
 	assert_emu51_callbacks(data, CB_SFR_UPDATE);
