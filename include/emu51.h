@@ -1,3 +1,7 @@
+/** @file emu51.h
+ * This file contains the public interface of libemu51.
+ */
+
 #ifndef _EMU51_H_
 #define _EMU51_H_
 
