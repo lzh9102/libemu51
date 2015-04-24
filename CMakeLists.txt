@@ -4,7 +4,11 @@ enable_testing()
 
 # show all warnings when using gcc
 if (CMAKE_COMPILER_IS_GNUCC)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+	if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+		set(CMAKE_C_FLAGS "-g -O0 -Wall -W -fprofile-arcs -ftest-coverage")
+		set(CMAKE_EXE_LINKER_FLAGS "-fprofile-arcs -ftest-coverage")
+		set(CMAKE_MODULE_LINKER_FLAGS "-fprofile-arcs -ftest-coverage")
+	endif()
 endif()
 
 add_subdirectory(src)
