@@ -245,9 +245,16 @@ int run_instr(uint32_t instr, testdata *data)
 
 	uint8_t opcode = buffer[0];
 
+	/* get instruction information */
 	const emu51_instr *instr_info = _emu51_decode_instr(opcode);
 	assert_int_equal(instr_info->bytes, instr_length);
 	assert_non_null(instr_info->handler);
+
+	/* Run the instruction on an emulator without callback functions. */
+	testdata *data_no_callback = dup_test_data(data); /* clone emulator */
+	memset(&data_no_callback->m->callback, 0, sizeof(emu51_callbacks)); /* clear callbacks */
+	instr_info->handler(instr_info, buffer, data_no_callback->m); /* run instruction */
+	free_test_data(data_no_callback); /* free the cloned emulator */
 
 	return instr_info->handler(instr_info, buffer, data->m);
 }
