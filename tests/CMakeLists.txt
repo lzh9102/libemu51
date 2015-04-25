@@ -1,6 +1,6 @@
 enable_testing()
 
-set(BUILD_TESTS OFF CACHE BOOL "Build unit tests")
+set(BUILD_TESTS ON CACHE BOOL "Build unit tests")
 if(BUILD_TESTS)
 	include_directories(${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/src)
 	add_executable(tests tests.c)
