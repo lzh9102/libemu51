@@ -1,6 +1,6 @@
 #include <emu51.h>
 #include <assert.h>
-#include "helpers.h"
+
 #include "instr.h"
 
 void emu51_reset(emu51 *m)
@@ -8,7 +8,7 @@ void emu51_reset(emu51 *m)
 	assert(m->sfr && "emu51_reset: m->sfr must not be NULL");
 
 	m->pc = 0;
-	REG(m, SP) = 0x07;
+	m->sfr[SFR_SP] = 0x07; /* initial stack pointer in 8051 is 0x07 */
 }
 
 int emu51_step(emu51 *m, int *cycles)
