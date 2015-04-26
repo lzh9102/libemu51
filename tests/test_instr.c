@@ -728,6 +728,20 @@ void test_cjne(void **state)
 	assert_int_equal(m->pc, 0x30 + 3); /* should branch */
 	assert_int_equal(PSW(m) & PSW_C, 0); /* carry is clear */
 	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+	/* index out of range */
+	testdata *data_no_upper_iram = dup_test_data(data);
+	data_no_upper_iram->m->iram_upper = NULL;
+	m->pc = 3;
+	addr = 0x85; /* this address belongs to the upper iram */
+	R0(m) = addr;
+	PSW(m) = PSW_C;
+	iram_write(m, addr, 0x46);
+	err = run_instr(INSTR3(opcode, 0x45, 0x30), data_no_upper_iram);
+	assert_int_equal(err, EMU51_IRAM_OUT_OF_RANGE);
+	assert_int_equal(m->pc, 3); /* pc should stay the same */
+	assert_int_equal(PSW(m) & PSW_C, PSW_C); /* carry is not changed */
+	assert_emu51_callbacks(data_no_upper_iram, 0); /* no callback is called */
+	free_test_data(data_no_upper_iram);
 
 	/* CJNE @R1, #data, reladdr (opcode = 0xb7) */
 	opcode = 0xb7;
