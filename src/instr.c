@@ -62,6 +62,8 @@ static inline int indirect_addr_read(emu51 *m, uint8_t ptr, uint8_t *out)
 #define ACC m->sfr[SFR_ACC]
 #define PSW m->sfr[SFR_PSW]
 
+#define BANK_BASE_ADDR (m->sfr[SFR_PSW] & (PSW_RS1 | PSW_RS0))
+
 /* Call the callback if it is not NULL. */
 #define CALLBACK(cb_name, ...) do { \
 	if (m->callback.cb_name) m->callback.cb_name(m, __VA_ARGS__); } while (0)
@@ -198,6 +200,29 @@ DEFINE_HANDLER(cjne_a_addr_handler)
 	uint8_t data = direct_addr_read(m, addr);
 
 	return general_cjne(m, ACC, data, reladdr);
+}
+
+/* operation: CJNE @R0, #data, reladdr
+ * flags: carry
+ */
+DEFINE_HANDLER(cjne_deref_r_data_handler)
+{
+	uint8_t data = OPERAND1;
+	uint8_t reladdr = OPERAND2;
+
+	/* The last bit of opcode determines whether to use R0 or R1.
+	 * last bit == 0 => R0
+	 * last bit == 1 => R1
+	 */
+	uint8_t addr = BANK_BASE_ADDR + (OPCODE & 0x01);
+
+	/* get the value of @R0 or R1 */
+	uint8_t reg_derefenced_value;
+	int err = indirect_addr_read(m, addr, &reg_derefenced_value);
+	if (err)
+		return err;
+
+	return general_cjne(m, reg_derefenced_value, data, reladdr);
 }
 
 /* macro to define an instruction */
@@ -393,8 +418,8 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0xb3),
 	INSTR(0xb4, "CJNE", 3, 2, cjne_a_data_handler),
 	INSTR(0xb5, "CJNE", 3, 2, cjne_a_addr_handler),
-	NOT_IMPLEMENTED(0xb6),
-	NOT_IMPLEMENTED(0xb7),
+	INSTR(0xb6, "CJNE", 3, 2, cjne_deref_r_data_handler),
+	INSTR(0xb7, "CJNE", 3, 2, cjne_deref_r_data_handler),
 	NOT_IMPLEMENTED(0xb8),
 	NOT_IMPLEMENTED(0xb9),
 	NOT_IMPLEMENTED(0xba),

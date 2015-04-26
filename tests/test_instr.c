@@ -22,6 +22,35 @@
 #define PMEM_SIZE 4096         /* program memory size used in tests */
 #define XRAM_SIZE (32 * 1024)  /* external memory size used in tests */
 
+#define ACC(m) m->sfr[SFR_ACC]
+#define PSW(m) m->sfr[SFR_PSW]
+
+#define R_REG_BASE(m) (m->sfr[SFR_PSW] & (PSW_RS1 | PSW_RS0))
+#define R0(m) m->iram_lower[R_REG_BASE(m) + 0]
+#define R1(m) m->iram_lower[R_REG_BASE(m) + 1]
+#define R2(m) m->iram_lower[R_REG_BASE(m) + 2]
+#define R3(m) m->iram_lower[R_REG_BASE(m) + 3]
+#define R4(m) m->iram_lower[R_REG_BASE(m) + 4]
+#define R5(m) m->iram_lower[R_REG_BASE(m) + 5]
+#define R6(m) m->iram_lower[R_REG_BASE(m) + 6]
+#define R7(m) m->iram_lower[R_REG_BASE(m) + 7]
+
+void iram_write(emu51 *m, uint8_t addr, uint8_t value)
+{
+	if (addr < 0x80)
+		m->iram_lower[addr] = value;
+	else
+		m->iram_upper[addr - 0x80] = value;
+}
+
+uint8_t iram_read(emu51 *m, uint8_t addr)
+{
+	if (addr < 0x80)
+		return m->iram_lower[addr];
+	else
+		return m->iram_upper[addr - 0x80];
+}
+
 /* data used in unit tests */
 typedef struct testdata
 {
@@ -580,7 +609,7 @@ void test_cjne(void **state)
 	assert_int_equal(m->pc, 0x0); /* should not branch when equal */
 	assert_emu51_callbacks(data, CB_SFR_UPDATE);
 
-	/* TODO: CJNE A, iram addr, reladdr (opcode=0xb5) */
+	/* CJNE A, iram addr, reladdr (opcode=0xb5) */
 	/* A < (addr), addr < 128 */
 	opcode = 0xb5;
 	addr = 0x54;
@@ -620,8 +649,6 @@ void test_cjne(void **state)
 	assert_int_equal(m->pc, 0x30); /* should branch */
 	assert_int_equal(m->sfr[SFR_PSW], 0xff ^ PSW_C); /* carry is clear */
 	assert_emu51_callbacks(data, CB_SFR_UPDATE);
-	/* disable upper ram; the emulator should not crash afterwards */
-	m->iram_upper = NULL;
 	/* A < (addr), addr >= 128 (SFR) */
 	opcode = 0xb5;
 	m->pc = 0;
@@ -662,8 +689,84 @@ void test_cjne(void **state)
 	assert_int_equal(m->sfr[SFR_PSW], 0xff ^ PSW_C); /* carry is clear */
 	assert_emu51_callbacks(data, CB_SFR_UPDATE);
 
-	/* TODO: CJNE @R0, #data, reladdr (opcode = 0xb6) */
-	/* TODO: CJNE @R1, #data, reladdr (opcode = 0xb7) */
+	/* CJNE @R0, #data, reladdr (opcode = 0xb6) */
+	opcode = 0xb6;
+	/* (R0) < data */
+	m->pc = 3;
+	addr = 0x85;
+	R0(m) = addr;
+	PSW(m) = 0;
+	iram_write(m, addr, 0x44);
+	expect_value(callback_sfr_update, index, SFR_PSW);
+	err = run_instr(INSTR3(opcode, 0x45, 0x30), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 0x30 + 3); /* should branch */
+	assert_int_equal(PSW(m), PSW_C); /* carry is set */
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+	/* (R0) == data */
+	m->pc = 3;
+	addr = 0x85;
+	R0(m) = addr;
+	PSW(m) = PSW_C;
+	iram_write(m, addr, 0x45);
+	expect_value(callback_sfr_update, index, SFR_PSW);
+	err = run_instr(INSTR3(opcode, 0x45, 0x30), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 3); /* should not branch */
+	assert_int_equal(PSW(m) & PSW_C, 0); /* carry is clear */
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+	/* (R0) > data */
+	m->pc = 3;
+	addr = 0x85;
+	R0(m) = addr;
+	PSW(m) = PSW_C;
+	iram_write(m, addr, 0x46);
+	expect_value(callback_sfr_update, index, SFR_PSW);
+	err = run_instr(INSTR3(opcode, 0x45, 0x30), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 0x30 + 3); /* should branch */
+	assert_int_equal(PSW(m) & PSW_C, 0); /* carry is clear */
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+
+	/* CJNE @R1, #data, reladdr (opcode = 0xb7) */
+	opcode = 0xb7;
+	/* (R1) < data */
+	m->pc = 3;
+	addr = 0x87;
+	PSW(m) = 0;
+	R1(m) = addr;
+	iram_write(m, addr, 0x44);
+	expect_value(callback_sfr_update, index, SFR_PSW);
+	err = run_instr(INSTR3(opcode, 0x45, 0x30), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 0x30 + 3); /* should branch */
+	assert_int_equal(PSW(m), PSW_C); /* carry is set */
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+	/* (R1) == data */
+	m->pc = 3;
+	addr = 0x87;
+	R1(m) = addr;
+	PSW(m) = PSW_C;
+	iram_write(m, addr, 0x45);
+	expect_value(callback_sfr_update, index, SFR_PSW);
+	err = run_instr(INSTR3(opcode, 0x45, 0x30), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 3); /* should not branch */
+	assert_int_equal(PSW(m) & PSW_C, 0); /* carry is clear */
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+	/* (R1) > data */
+	m->pc = 3;
+	addr = 0x87;
+	R1(m) = addr;
+	PSW(m) = PSW_C;
+	iram_write(m, addr, 0x46);
+	expect_value(callback_sfr_update, index, SFR_PSW);
+	err = run_instr(INSTR3(opcode, 0x45, 0x30), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 0x30 + 3); /* should branch */
+	assert_int_equal(PSW(m) & PSW_C, 0); /* carry is clear */
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+
 	/* TODO: CJNE R0, #data, reladdr (opcode = 0xb8) */
 	/* TODO: CJNE R1, #data, reladdr (opcode = 0xb9) */
 	/* TODO: CJNE R2, #data, reladdr (opcode = 0xba) */
