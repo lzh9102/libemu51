@@ -12,6 +12,9 @@ if ! which lcov 2>&1 > /dev/null; then
 	exit 1
 fi
 
+# clear counters
+lcov --zerocounters --directory "$1"
+
 # run unit tests
 make test || exit 1
 
