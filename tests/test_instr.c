@@ -26,14 +26,15 @@
 #define PSW(m) m->sfr[SFR_PSW]
 
 #define R_REG_BASE(m) (m->sfr[SFR_PSW] & (PSW_RS1 | PSW_RS0))
-#define R0(m) m->iram_lower[R_REG_BASE(m) + 0]
-#define R1(m) m->iram_lower[R_REG_BASE(m) + 1]
-#define R2(m) m->iram_lower[R_REG_BASE(m) + 2]
-#define R3(m) m->iram_lower[R_REG_BASE(m) + 3]
-#define R4(m) m->iram_lower[R_REG_BASE(m) + 4]
-#define R5(m) m->iram_lower[R_REG_BASE(m) + 5]
-#define R6(m) m->iram_lower[R_REG_BASE(m) + 6]
-#define R7(m) m->iram_lower[R_REG_BASE(m) + 7]
+#define R_REG(m, n) m->iram_lower[R_REG_BASE(m) + (n)]
+#define R0(m) R_REG(m, 0)
+#define R1(m) R_REG(m, 1)
+#define R2(m) R_REG(m, 2)
+#define R3(m) R_REG(m, 3)
+#define R4(m) R_REG(m, 4)
+#define R5(m) R_REG(m, 5)
+#define R6(m) R_REG(m, 6)
+#define R7(m) R_REG(m, 7)
 
 void iram_write(emu51 *m, uint8_t addr, uint8_t value)
 {
@@ -767,14 +768,41 @@ void test_cjne(void **state)
 	assert_int_equal(PSW(m) & PSW_C, 0); /* carry is clear */
 	assert_emu51_callbacks(data, CB_SFR_UPDATE);
 
-	/* TODO: CJNE R0, #data, reladdr (opcode = 0xb8) */
-	/* TODO: CJNE R1, #data, reladdr (opcode = 0xb9) */
-	/* TODO: CJNE R2, #data, reladdr (opcode = 0xba) */
-	/* TODO: CJNE R3, #data, reladdr (opcode = 0xbb) */
-	/* TODO: CJNE R4, #data, reladdr (opcode = 0xbc) */
-	/* TODO: CJNE R5, #data, reladdr (opcode = 0xbd) */
-	/* TODO: CJNE R6, #data, reladdr (opcode = 0xbe) */
-	/* TODO: CJNE R7, #data, reladdr (opcode = 0xbf) */
+	/* CJNE Rn, #data, reladdr (opcode: 0xb8~0xbf for R0~R7) */
+	int i;
+	for (i = 0; i <= 7; i++) {
+		opcode = 0xb8 + i;
+		/* Rn < data */
+		m->pc = 5;
+		R_REG(m, i) = 0x6f;
+		PSW(m) = 0;
+		expect_value(callback_sfr_update, index, SFR_PSW);
+		err = run_instr(INSTR3(opcode, 0x70, 0x32), data);
+		assert_int_equal(err, 0);
+		assert_int_equal(m->pc, 5 + 0x32); /* should branch */
+		assert_int_equal(PSW(m) & PSW_C, PSW_C); /* carry set */
+		assert_emu51_callbacks(data, CB_SFR_UPDATE);
+		/* Rn == data */
+		m->pc = 5;
+		R_REG(m, i) = 0x70;
+		PSW(m) = PSW_C;
+		expect_value(callback_sfr_update, index, SFR_PSW);
+		err = run_instr(INSTR3(opcode, 0x70, 0x32), data);
+		assert_int_equal(err, 0);
+		assert_int_equal(m->pc, 5); /* should not branch */
+		assert_int_equal(PSW(m) & PSW_C, 0); /* carry clear */
+		assert_emu51_callbacks(data, CB_SFR_UPDATE);
+		/* Rn > data */
+		m->pc = 5;
+		R_REG(m, i) = 0x71;
+		PSW(m) = PSW_C;
+		expect_value(callback_sfr_update, index, SFR_PSW);
+		err = run_instr(INSTR3(opcode, 0x70, 0x32), data);
+		assert_int_equal(err, 0);
+		assert_int_equal(m->pc, 5 + 0x32); /* should branch */
+		assert_int_equal(PSW(m) & PSW_C, 0); /* carry clear */
+		assert_emu51_callbacks(data, CB_SFR_UPDATE);
+	}
 
 	free_test_data(data);
 }

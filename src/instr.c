@@ -63,6 +63,7 @@ static inline int indirect_addr_read(emu51 *m, uint8_t ptr, uint8_t *out)
 #define PSW m->sfr[SFR_PSW]
 
 #define BANK_BASE_ADDR (m->sfr[SFR_PSW] & (PSW_RS1 | PSW_RS0))
+#define REG_R(n) m->iram_lower[BANK_BASE_ADDR + (n)]
 
 /* Call the callback if it is not NULL. */
 #define CALLBACK(cb_name, ...) do { \
@@ -223,6 +224,20 @@ DEFINE_HANDLER(cjne_deref_r_data_handler)
 		return err;
 
 	return general_cjne(m, reg_derefenced_value, data, reladdr);
+}
+
+/* operation: CJNE Rn, #data, reladdr
+ * flags: carry
+ */
+DEFINE_HANDLER(cjne_r_data_handler)
+{
+	uint8_t data = OPERAND1;
+	uint8_t reladdr = OPERAND2;
+
+	/* The last 3 bit of opcode is the R number (0~7) */
+	uint8_t r_index = OPCODE & 0x07;
+
+	return general_cjne(m, REG_R(r_index), data, reladdr);
 }
 
 /* macro to define an instruction */
@@ -420,14 +435,14 @@ const emu51_instr _emu51_instr_table[256] = {
 	INSTR(0xb5, "CJNE", 3, 2, cjne_a_addr_handler),
 	INSTR(0xb6, "CJNE", 3, 2, cjne_deref_r_data_handler),
 	INSTR(0xb7, "CJNE", 3, 2, cjne_deref_r_data_handler),
-	NOT_IMPLEMENTED(0xb8),
-	NOT_IMPLEMENTED(0xb9),
-	NOT_IMPLEMENTED(0xba),
-	NOT_IMPLEMENTED(0xbb),
-	NOT_IMPLEMENTED(0xbc),
-	NOT_IMPLEMENTED(0xbd),
-	NOT_IMPLEMENTED(0xbe),
-	NOT_IMPLEMENTED(0xbf),
+	INSTR(0xb8, "CJNE", 3, 2, cjne_r_data_handler),
+	INSTR(0xb9, "CJNE", 3, 2, cjne_r_data_handler),
+	INSTR(0xba, "CJNE", 3, 2, cjne_r_data_handler),
+	INSTR(0xbb, "CJNE", 3, 2, cjne_r_data_handler),
+	INSTR(0xbc, "CJNE", 3, 2, cjne_r_data_handler),
+	INSTR(0xbd, "CJNE", 3, 2, cjne_r_data_handler),
+	INSTR(0xbe, "CJNE", 3, 2, cjne_r_data_handler),
+	INSTR(0xbf, "CJNE", 3, 2, cjne_r_data_handler),
 	NOT_IMPLEMENTED(0xc0),
 	INSTR(0xc1, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0xc2),
