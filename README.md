@@ -10,5 +10,5 @@
 
 ## License
 
-This work is distributed under the zlib/libpng license. See LICENSE.txt for
-details.
+This work is distributed under the zlib/libpng license. See COPYING for the
+full license text.
