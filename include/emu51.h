@@ -168,6 +168,8 @@ enum emu51_sfr_index
 	 * are in the range 0x80~0xff. Therefore, the indices of the SFRs are 0x80
 	 * subtracted from their addresses.
 	 */
+	SFR_BASE_ADDR = 0x80,
+
 	SFR_P0 = 0x80 - 0x80,   /**< I/O port 0 */
 	SFR_P1 = 0x90 - 0x80,   /**< I/O port 1 */
 	SFR_P2 = 0xa0 - 0x80,   /**< I/O port 2 */
@@ -214,6 +216,7 @@ enum emu51_errno
 {
 	EMU51_SUCCESS = 0, /**< There is no error */
 	EMU51_PMEM_OUT_OF_RANGE, /**< Trying to read beyond the program memory */
+	EMU51_IRAM_OUT_OF_RANGE, /**< Trying to read beyond the internal memory */
 };
 
 /** Reset the emulator.

@@ -544,7 +544,7 @@ void test_cjne(void **state)
 {
 	testdata *data = alloc_test_data();
 	emu51 *m = data->m;
-	uint8_t opcode = 0;
+	uint8_t opcode = 0, addr;
 	int err = 0;
 
 	/* CJNE A, #data, reladdr (opcode=0xb4) */
@@ -581,6 +581,87 @@ void test_cjne(void **state)
 	assert_emu51_callbacks(data, CB_SFR_UPDATE);
 
 	/* TODO: CJNE A, iram addr, reladdr (opcode=0xb5) */
+	/* A < (addr), addr < 128 */
+	opcode = 0xb5;
+	addr = 0x54;
+	m->pc = 0;
+	m->sfr[SFR_ACC] = 33;
+	m->iram_lower[addr] = 34;
+	m->sfr[SFR_PSW] = 0;
+	expect_value(callback_sfr_update, index, SFR_PSW);
+	err = run_instr(INSTR3(opcode, addr, 0x30), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 0x30); /* should branch */
+	assert_int_equal(m->sfr[SFR_PSW], PSW_C); /* carry is set */
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+	/* A == (addr), addr < 128 */
+	opcode = 0xb5;
+	addr = 0x54;
+	m->pc = 0;
+	m->sfr[SFR_ACC] = 34;
+	m->iram_lower[addr] = 34;
+	m->sfr[SFR_PSW] = 0xff;
+	expect_value(callback_sfr_update, index, SFR_PSW);
+	err = run_instr(INSTR3(opcode, addr, 0x30), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 0); /* should not branch */
+	assert_int_equal(m->sfr[SFR_PSW], 0xff ^ PSW_C); /* carry is clear */
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+	/* A > (addr), addr < 128 */
+	opcode = 0xb5;
+	addr = 0x54;
+	m->pc = 0;
+	m->sfr[SFR_ACC] = 35;
+	m->iram_lower[addr] = 34;
+	m->sfr[SFR_PSW] = 0xff;
+	expect_value(callback_sfr_update, index, SFR_PSW);
+	err = run_instr(INSTR3(opcode, addr, 0x30), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 0x30); /* should branch */
+	assert_int_equal(m->sfr[SFR_PSW], 0xff ^ PSW_C); /* carry is clear */
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+	/* disable upper ram; the emulator should not crash afterwards */
+	m->iram_upper = NULL;
+	/* A < (addr), addr >= 128 (SFR) */
+	opcode = 0xb5;
+	m->pc = 0;
+	addr = SFR_BASE_ADDR + SFR_B; /* register B */
+	m->sfr[SFR_B] = 34;
+	m->sfr[SFR_ACC] = 33;
+	m->sfr[SFR_PSW] = 0;
+	expect_value(callback_sfr_update, index, SFR_PSW);
+	err = run_instr(INSTR3(opcode, addr, 0x30), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 0x30); /* should branch */
+	assert_int_equal(m->sfr[SFR_PSW], PSW_C); /* carry is set */
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+	/* A == (addr), addr >= 128 (SFR) */
+	opcode = 0xb5;
+	m->pc = 0;
+	addr = SFR_BASE_ADDR + SFR_B; /* register B */
+	m->sfr[SFR_B] = 34;
+	m->sfr[SFR_ACC] = 34;
+	m->sfr[SFR_PSW] = 0xff;
+	expect_value(callback_sfr_update, index, SFR_PSW);
+	err = run_instr(INSTR3(opcode, addr, 0x30), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 0); /* should not branch */
+	assert_int_equal(m->sfr[SFR_PSW], 0xff ^ PSW_C); /* carry is clear */
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+	/* A > (addr), addr >= 128 (SFR) */
+	opcode = 0xb5;
+	m->pc = 0;
+	addr = SFR_BASE_ADDR + SFR_B; /* register B */
+	m->sfr[SFR_B] = 34;
+	m->sfr[SFR_ACC] = 35;
+	m->sfr[SFR_PSW] = 0xff;
+	expect_value(callback_sfr_update, index, SFR_PSW);
+	err = run_instr(INSTR3(opcode, addr, 0x30), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 0x30); /* should branch */
+	assert_int_equal(m->sfr[SFR_PSW], 0xff ^ PSW_C); /* carry is clear */
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+
 	/* TODO: CJNE @R0, #data, reladdr (opcode = 0xb6) */
 	/* TODO: CJNE @R1, #data, reladdr (opcode = 0xb7) */
 	/* TODO: CJNE R0, #data, reladdr (opcode = 0xb8) */

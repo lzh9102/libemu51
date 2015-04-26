@@ -3,6 +3,43 @@
 
 /* Helper functions */
 
+/* Read data from immediate address.
+ * An immediate address can refer to:
+ *	 1. internal ram, if addr < 0x80
+ *	 2. SFR, if addr >= 0x80
+ */
+static inline uint8_t direct_addr_read(emu51 *m, uint8_t addr)
+{
+	if (addr < 0x80) /* lower internal ram (0~0x7f) */
+		return m->iram_lower[addr];
+	else /* SFR */
+		return m->sfr[addr - SFR_BASE_ADDR];
+}
+
+/* Read data from the address pointed by ptr.
+ * The indirect address always refer to internal ram, not SFR.
+ * Returns 0 on success or return an error code. The caller must check for the
+ * error code.
+ */
+static inline int indirect_addr_read(emu51 *m, uint8_t ptr, uint8_t *out)
+{
+	uint8_t addr = direct_addr_read(m, ptr);
+	if (addr < 0x80) { /* lower iram */
+		/* m->iram_lower is required to be set by the user, so we don't have to
+		 * check for NULL here. */
+		*out = m->iram_lower[addr];
+		return 0;
+	} else { /* upper iram */
+		/* m->iram_upper is not guaranteed to exist, so checking is necessary */
+		if (m->iram_upper) {
+			*out = m->iram_upper[addr - 0x80];
+			return 0;
+		} else { /* upper iram is not set */
+			return EMU51_IRAM_OUT_OF_RANGE;
+		}
+	}
+}
+
 /* Implementations of 8051/8052 instructions.
  *
  * The functions should return 0 on success or an error code on error.
@@ -120,6 +157,7 @@ DEFINE_HANDLER(movc_pc_handler)
 	return 0;
 }
 
+/* perform CJNE given value of operand1, operand2 and reladdr */
 static inline int general_cjne(emu51 *m, uint8_t op1, uint8_t op2,
 		uint8_t reladdr)
 {
@@ -155,7 +193,11 @@ DEFINE_HANDLER(cjne_a_data_handler)
  */
 DEFINE_HANDLER(cjne_a_addr_handler)
 {
-	uint8_t iram_addr = OPERAND1;
+	uint8_t addr = OPERAND1;
+	uint8_t reladdr = OPERAND2;
+	uint8_t data = direct_addr_read(m, addr);
+
+	return general_cjne(m, ACC, data, reladdr);
 }
 
 /* macro to define an instruction */
@@ -350,7 +392,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0xb2),
 	NOT_IMPLEMENTED(0xb3),
 	INSTR(0xb4, "CJNE", 3, 2, cjne_a_data_handler),
-	NOT_IMPLEMENTED(0xb5),
+	INSTR(0xb5, "CJNE", 3, 2, cjne_a_addr_handler),
 	NOT_IMPLEMENTED(0xb6),
 	NOT_IMPLEMENTED(0xb7),
 	NOT_IMPLEMENTED(0xb8),
