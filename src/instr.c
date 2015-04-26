@@ -23,6 +23,7 @@
 
 #define DPTR ((m->sfr[SFR_DPH] << 8) | m->sfr[SFR_DPL])
 #define ACC m->sfr[SFR_ACC]
+#define PSW m->sfr[SFR_PSW]
 
 /* Call the callback if it is not NULL. */
 #define CALLBACK(cb_name, ...) do { \
@@ -117,6 +118,44 @@ DEFINE_HANDLER(movc_pc_handler)
 	CALLBACK(sfr_update, SFR_ACC);
 
 	return 0;
+}
+
+static inline int general_cjne(emu51 *m, uint8_t op1, uint8_t op2,
+		uint8_t reladdr)
+{
+	/* compute carry flag: set only when op1 < op2 */
+	if (op1 < op2)
+		PSW |= PSW_C;
+	else
+		PSW &= ~PSW_C;
+
+	/* branch if not equal */
+	if (op1 != op2)
+		PC += reladdr;
+
+	/* PSW is updated */
+	CALLBACK(sfr_update, SFR_PSW);
+
+	return 0;
+}
+
+/* operation: CJNE A, #data, reladdr
+ * flags: carry
+ */
+DEFINE_HANDLER(cjne_a_data_handler)
+{
+	uint8_t data = OPERAND1;
+	uint8_t reladdr = OPERAND2;
+
+	return general_cjne(m, ACC, data, reladdr);
+}
+
+/* operation: CJNE A, iram addr, reladdr
+ * flags: carry
+ */
+DEFINE_HANDLER(cjne_a_addr_handler)
+{
+	uint8_t iram_addr = OPERAND1;
 }
 
 /* macro to define an instruction */
@@ -310,7 +349,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0xb1),
 	NOT_IMPLEMENTED(0xb2),
 	NOT_IMPLEMENTED(0xb3),
-	NOT_IMPLEMENTED(0xb4),
+	INSTR(0xb4, "CJNE", 3, 2, cjne_a_data_handler),
 	NOT_IMPLEMENTED(0xb5),
 	NOT_IMPLEMENTED(0xb6),
 	NOT_IMPLEMENTED(0xb7),

@@ -224,6 +224,15 @@ void write_random_data_to_memories(testdata *data)
 #define assert_emu51_callbacks(data, callback_bits) \
 	assert_int_equal(data->callback_called, callback_bits)
 
+#define assert_emu51_flags_changed(data1, data2, psw_mask) \
+	assert_int_equal((data1)->sfr[SFR_PSW] ^ (data2)->sfr[SFR_PSW], psw_mask)
+
+#define assert_emu51_flags_set(data, psw_mask) \
+	assert_int_equal((data)->sfr[SFR_PSW] & (psw_mask), psw_mask)
+
+#define assert_emu51_flags_not_set(data, psw_mask) \
+	assert_int_equal((data)->sfr[SFR_PSW] & (psw_mask), 0)
+
 /* the highest byte (0xff000000) is used to store instruction length */
 #define INSTR1(opcode) ((0x01 << 24) | (opcode))
 #define INSTR2(opcode, op1) ((0x02 << 24) | ((op1) << 8) | (opcode))
@@ -531,6 +540,61 @@ void test_movc()
 	free_test_data(data);
 }
 
+void test_cjne(void **state)
+{
+	testdata *data = alloc_test_data();
+	emu51 *m = data->m;
+	uint8_t opcode = 0;
+	int err = 0;
+
+	/* CJNE A, #data, reladdr (opcode=0xb4) */
+	opcode = 0xb4;
+	/* A < #data, carry bit should be set */
+	m->pc = 0;
+	m->sfr[SFR_ACC] = 0x10;
+	m->sfr[SFR_PSW] = 0x00;
+	expect_value(callback_sfr_update, index, SFR_PSW);
+	err = run_instr(INSTR3(opcode, 0x11, 0x23), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->sfr[SFR_PSW], PSW_C); /* carry is set */
+	assert_int_equal(m->pc, 0x23); /* should branch */
+	assert_emu51_callbacks(data, CB_SFR_UPDATE); /* carry in PSW is updated */
+	/* A > #data */
+	m->pc = 0;
+	m->sfr[SFR_ACC] = 0x10;
+	m->sfr[SFR_PSW] = 0xff;
+	expect_value(callback_sfr_update, index, SFR_PSW);
+	err = run_instr(INSTR3(opcode, 0x09, 0x23), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->sfr[SFR_PSW], 0xff ^ PSW_C); /* carry is cleared */
+	assert_int_equal(m->pc, 0x23); /* should branch */
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+	/* A == #data */
+	m->pc = 0;
+	m->sfr[SFR_ACC] = 0x10;
+	m->sfr[SFR_PSW] = 0xff;
+	expect_value(callback_sfr_update, index, SFR_PSW);
+	err = run_instr(INSTR3(opcode, 0x10, 0x23), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->sfr[SFR_PSW], 0xff ^ PSW_C); /* carry is cleared */
+	assert_int_equal(m->pc, 0x0); /* should not branch when equal */
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+
+	/* TODO: CJNE A, iram addr, reladdr (opcode=0xb5) */
+	/* TODO: CJNE @R0, #data, reladdr (opcode = 0xb6) */
+	/* TODO: CJNE @R1, #data, reladdr (opcode = 0xb7) */
+	/* TODO: CJNE R0, #data, reladdr (opcode = 0xb8) */
+	/* TODO: CJNE R1, #data, reladdr (opcode = 0xb9) */
+	/* TODO: CJNE R2, #data, reladdr (opcode = 0xba) */
+	/* TODO: CJNE R3, #data, reladdr (opcode = 0xbb) */
+	/* TODO: CJNE R4, #data, reladdr (opcode = 0xbc) */
+	/* TODO: CJNE R5, #data, reladdr (opcode = 0xbd) */
+	/* TODO: CJNE R6, #data, reladdr (opcode = 0xbe) */
+	/* TODO: CJNE R7, #data, reladdr (opcode = 0xbf) */
+
+	free_test_data(data);
+}
+
 /* end of test functions */
 
 int main()
@@ -542,6 +606,7 @@ int main()
 		cmocka_unit_test(test_ljmp),
 		cmocka_unit_test(test_sjmp),
 		cmocka_unit_test(test_movc),
+		cmocka_unit_test(test_cjne),
 	};
 	/* don't use setup and teardown as cmocka doesn't report memory bugs in them
 	 */
