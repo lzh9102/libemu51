@@ -21,7 +21,7 @@
 
 void test_reset(void **state)
 {
-	int i;
+	unsigned int i;
 	emu51 m;
 	uint8_t sfr[128];
 

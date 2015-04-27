@@ -210,7 +210,7 @@ void free_test_data(testdata *data)
 /* write random data to the buffer */
 void write_random_data(uint8_t *buffer, size_t size)
 {
-	int i;
+	unsigned int i;
 	for (i = 0; i < size; i++)
 		buffer[i] = rand() & 0xff;
 }
