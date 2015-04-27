@@ -45,6 +45,12 @@ static inline int indirect_addr_read(emu51 *m, uint8_t ptr, uint8_t *out)
  * The functions should return 0 on success or an error code on error.
  */
 
+/* disable unused parameter warning when using gcc */
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 /* These macros are used for writing instruction handlers. By using these
  * macros, it is possible to change the handler signature (e.g. for performance
  * reasons) without replacing each handler function.
@@ -239,6 +245,13 @@ DEFINE_HANDLER(cjne_r_data_handler)
 
 	return general_cjne(m, REG_R(r_index), data, reladdr);
 }
+
+/* End of instruction handlers */
+
+/* restore diagnostic settings */
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 /* macro to define an instruction */
 #define INSTR(op, mne, b, c, h) {.opcode = op, .bytes = b, .cycles = c, \

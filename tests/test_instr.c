@@ -298,6 +298,11 @@ int run_instr(uint32_t instr, testdata *data)
 	return instr_info->handler(instr_info, buffer, data->m);
 }
 
+/* disable unused parameter warning when using gcc */
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 /* here goes the test functions */
 
 void test_nop(void **state)

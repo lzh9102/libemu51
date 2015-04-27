@@ -14,6 +14,11 @@
 #define calloc test_calloc
 #define free test_free
 
+/* disable unused parameter warning when using gcc */
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 void test_reset(void **state)
 {
 	int i;
