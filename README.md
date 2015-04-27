@@ -10,13 +10,16 @@
 
 ## Dependencies
 
-libemu51 is written in standard C99, with the following optional dependencies:
+The following software is required to build libemu51:
+
+- C99-compliant C compiler
+- [CMake](http://www.cmake.org/)
+
+Optional dependencies:
 
 - [cmocka](https://cmocka.org/): unit tests
 - gcc+lcov: generating test coverage report
 - [doxygen](http://www.stack.nl/~dimitri/doxygen/): generating API documentation
-
-[CMake](http://www.cmake.org/) is required to build libemu51.
 
 ## Building
 
