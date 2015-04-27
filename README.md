@@ -14,6 +14,7 @@ libemu51 is written in standard C99, with the following optional dependencies:
 
 - [cmocka](https://cmocka.org/): unit tests
 - gcc+lcov: generating test coverage report
+- [doxygen](http://www.stack.nl/~dimitri/doxygen/): generating API documentation
 
 [CMake](http://www.cmake.org/) is required to build libemu51.
 
@@ -27,19 +28,12 @@ cmake ..
 make
 ```
 
-Run the unit tests:
+Build and view API documentation:
 
 ```
-make test
+make doc
+firefox doc/html/index.html
 ```
-
-Generate and view coverage report (requires lcov):
-
-```
-make coverage
-firefox coverage/index.html
-```
-
 ## License
 
 This work is distributed under the zlib/libpng license. See COPYING for the
