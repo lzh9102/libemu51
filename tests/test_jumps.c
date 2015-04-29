@@ -287,6 +287,43 @@ void test_jmp(void **state)
 	free_test_data(orig_data);
 }
 
+void test_jc(void **state)
+{
+	testdata *data = alloc_test_data();
+	emu51 *m = data->m;
+	int err;
+
+	/* jump forward, carry set */
+	PC(m) = 0xaaaa;
+	PSW(m) |= PSW_C;
+	err = run_instr(INSTR2(0x40, 0x7f), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(PC(m), 0xaaaa + 0x7f);
+
+	/* not jumping forward */
+	PC(m) = 0xaaaa;
+	PSW(m) &= ~PSW_C; /* carry not set */
+	err = run_instr(INSTR2(0x40, 0x7f), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(PC(m), 0xaaaa);
+
+	/* jump backward, carry set */
+	PC(m) = 0xaaaa;
+	PSW(m) |= PSW_C;
+	err = run_instr(INSTR2(0x40, 0x80), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(PC(m), 0xaaaa - 0x80);
+
+	/* not jumping backward */
+	PC(m) = 0xaaaa;
+	PSW(m) &= ~PSW_C; /* carry not set */
+	err = run_instr(INSTR2(0x40, 0x80), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(PC(m), 0xaaaa);
+
+	free_test_data(data);
+}
+
 void test_ljmp(void **state)
 {
 	testdata *data = alloc_test_data();
@@ -697,6 +734,7 @@ int main()
 		cmocka_unit_test(test_acall),
 		cmocka_unit_test(test_ajmp),
 		cmocka_unit_test(test_jmp),
+		cmocka_unit_test(test_jc),
 		cmocka_unit_test(test_ljmp),
 		cmocka_unit_test(test_lcall),
 		cmocka_unit_test(test_sjmp),

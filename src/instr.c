@@ -177,6 +177,18 @@ DEFINE_HANDLER(jmp_handler)
 	return 0;
 }
 
+/* operation: JC
+ * function: jump if carry set
+ */
+DEFINE_HANDLER(jc_handler)
+{
+	int8_t reladdr = OPERAND1; /* reladdr is signed -128~127 */
+
+	if ((PSW & PSW_C) == PSW_C)
+		PC += reladdr;
+	return 0;
+}
+
 /* operation: LJMP
  * function: long jump
  */
@@ -423,7 +435,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x3d),
 	NOT_IMPLEMENTED(0x3e),
 	NOT_IMPLEMENTED(0x3f),
-	NOT_IMPLEMENTED(0x40),
+	INSTR(0x40, "JC", 2, 2, jc_handler),
 	INSTR(0x41, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0x42),
 	NOT_IMPLEMENTED(0x43),
