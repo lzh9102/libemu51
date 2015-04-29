@@ -24,6 +24,8 @@
 
 #define ACC(m) m->sfr[SFR_ACC]
 #define PSW(m) m->sfr[SFR_PSW]
+#define SP(m) m->sfr[SFR_SP]
+#define PC(m) m->pc
 
 #define R_REG_BASE(m) (m->sfr[SFR_PSW] & (PSW_RS1 | PSW_RS0))
 #define R_REG(m, n) m->iram_lower[R_REG_BASE(m) + (n)]
@@ -327,6 +329,138 @@ void test_nop(void **state)
 	assert_emu51_callbacks(data, 0);
 
 	free_test_data(orig_data);
+	free_test_data(data);
+}
+
+void test_acall(void **state)
+{
+	testdata *data = alloc_test_data();
+	emu51 *m = data->m;
+	int err;
+	uint8_t opcode;
+
+	/* ACALL page0 */
+	opcode = 0x11;
+	PC(m) = 0xffaa;
+	SP(m) = 0x20;
+	expect_value(callback_sfr_update, index, SFR_SP);
+	expect_value(callback_iram_update, addr, 0x21);
+	expect_value(callback_iram_update, addr, 0x22);
+	err = run_instr(INSTR2(opcode, 0x10), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(PC(m), 0xf810);
+	assert_int_equal(SP(m), 0x22);
+	assert_int_equal(iram_read(m, 0x21), 0xaa);
+	assert_int_equal(iram_read(m, 0x22), 0xff);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE | CB_IRAM_UPDATE);
+
+	/* ACALL page1 */
+	opcode = 0x31;
+	PC(m) = 0xffaa;
+	SP(m) = 0x20;
+	expect_value(callback_sfr_update, index, SFR_SP);
+	expect_value(callback_iram_update, addr, 0x21);
+	expect_value(callback_iram_update, addr, 0x22);
+	err = run_instr(INSTR2(opcode, 0x10), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(PC(m), 0xf910);
+	assert_int_equal(SP(m), 0x22);
+	assert_int_equal(iram_read(m, 0x21), 0xaa);
+	assert_int_equal(iram_read(m, 0x22), 0xff);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE | CB_IRAM_UPDATE);
+
+	/* ACALL page2 */
+	opcode = 0x51;
+	PC(m) = 0xffaa;
+	SP(m) = 0x20;
+	expect_value(callback_sfr_update, index, SFR_SP);
+	expect_value(callback_iram_update, addr, 0x21);
+	expect_value(callback_iram_update, addr, 0x22);
+	err = run_instr(INSTR2(opcode, 0x10), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(PC(m), 0xfa10);
+	assert_int_equal(SP(m), 0x22);
+	assert_int_equal(iram_read(m, 0x21), 0xaa);
+	assert_int_equal(iram_read(m, 0x22), 0xff);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE | CB_IRAM_UPDATE);
+
+	/* ACALL page3 */
+	opcode = 0x71;
+	PC(m) = 0xffaa;
+	SP(m) = 0x20;
+	expect_value(callback_sfr_update, index, SFR_SP);
+	expect_value(callback_iram_update, addr, 0x21);
+	expect_value(callback_iram_update, addr, 0x22);
+	err = run_instr(INSTR2(opcode, 0x10), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(PC(m), 0xfb10);
+	assert_int_equal(SP(m), 0x22);
+	assert_int_equal(iram_read(m, 0x21), 0xaa);
+	assert_int_equal(iram_read(m, 0x22), 0xff);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE | CB_IRAM_UPDATE);
+
+	/* ACALL page4 */
+	opcode = 0x91;
+	PC(m) = 0xffaa;
+	SP(m) = 0x20;
+	expect_value(callback_sfr_update, index, SFR_SP);
+	expect_value(callback_iram_update, addr, 0x21);
+	expect_value(callback_iram_update, addr, 0x22);
+	err = run_instr(INSTR2(opcode, 0x10), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(PC(m), 0xfc10);
+	assert_int_equal(SP(m), 0x22);
+	assert_int_equal(iram_read(m, 0x21), 0xaa);
+	assert_int_equal(iram_read(m, 0x22), 0xff);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE | CB_IRAM_UPDATE);
+
+	/* ACALL page5 */
+	opcode = 0xb1;
+	PC(m) = 0xffaa;
+	SP(m) = 0x20;
+	expect_value(callback_sfr_update, index, SFR_SP);
+	expect_value(callback_iram_update, addr, 0x21);
+	expect_value(callback_iram_update, addr, 0x22);
+	err = run_instr(INSTR2(opcode, 0x10), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(PC(m), 0xfd10);
+	assert_int_equal(SP(m), 0x22);
+	assert_int_equal(iram_read(m, 0x21), 0xaa);
+	assert_int_equal(iram_read(m, 0x22), 0xff);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE | CB_IRAM_UPDATE);
+
+	/* ACALL page6 */
+	opcode = 0xd1;
+	PC(m) = 0x00aa;
+	SP(m) = 0x20;
+	expect_value(callback_sfr_update, index, SFR_SP);
+	expect_value(callback_iram_update, addr, 0x21);
+	expect_value(callback_iram_update, addr, 0x22);
+	err = run_instr(INSTR2(opcode, 0x10), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(PC(m), 0x0610);
+	assert_int_equal(SP(m), 0x22);
+	assert_int_equal(iram_read(m, 0x21), 0xaa);
+	assert_int_equal(iram_read(m, 0x22), 0x00);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE | CB_IRAM_UPDATE);
+
+	/* ACALL page7 */
+	opcode = 0xf1;
+	PC(m) = 0x00aa;
+	SP(m) = 0x20;
+	expect_value(callback_sfr_update, index, SFR_SP);
+	expect_value(callback_iram_update, addr, 0x21);
+	expect_value(callback_iram_update, addr, 0x22);
+	err = run_instr(INSTR2(opcode, 0x10), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(PC(m), 0x0710);
+	assert_int_equal(SP(m), 0x22);
+	assert_int_equal(iram_read(m, 0x21), 0xaa);
+	assert_int_equal(iram_read(m, 0x22), 0x00);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE | CB_IRAM_UPDATE);
+
+	/* TODO: test for stack overflow (e.g. no upper ram */
+
 	free_test_data(data);
 }
 
@@ -832,6 +966,7 @@ int main()
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_nop),
+		cmocka_unit_test(test_acall),
 		cmocka_unit_test(test_ajmp),
 		cmocka_unit_test(test_jmp),
 		cmocka_unit_test(test_ljmp),

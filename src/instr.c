@@ -16,6 +16,15 @@ static inline uint8_t direct_addr_read(emu51 *m, uint8_t addr)
 		return m->sfr[addr - SFR_BASE_ADDR];
 }
 
+/* Write data to direct address */
+static inline void direct_addr_write(emu51 *m, uint8_t addr, uint8_t data)
+{
+	if (addr < 0x80) /* lower internal ram (0~0x7f) */
+		m->iram_lower[addr] = data;
+	else /* SFR */
+		m->sfr[addr - SFR_BASE_ADDR] = data;
+}
+
 /* Read data from the address pointed by ptr.
  * The indirect address always refer to internal ram, not SFR.
  * Returns 0 on success or return an error code. The caller must check for the
@@ -38,6 +47,38 @@ static inline int indirect_addr_read(emu51 *m, uint8_t ptr, uint8_t *out)
 			return EMU51_IRAM_OUT_OF_RANGE;
 		}
 	}
+}
+
+/* Write data to the address pointed by ptr.
+ * See indirect_addr_read.
+ */
+static inline int indirect_addr_write(emu51 *m, uint8_t ptr, uint8_t data)
+{
+	uint8_t addr = direct_addr_read(m, ptr);
+	if (addr < 0x80) { /* lower iram */
+		/* m->iram_lower is required to be set by the user, so we don't have to
+		 * check for NULL here. */
+		m->iram_lower[addr] = data;
+		return 0;
+	} else { /* upper iram */
+		/* m->iram_upper is not guaranteed to exist, so checking is necessary */
+		if (m->iram_upper) {
+			m->iram_upper[addr - 0x80] = data;
+			return 0;
+		} else { /* upper iram is not set */
+			return EMU51_IRAM_OUT_OF_RANGE;
+		}
+	}
+}
+
+/* Push a value onto the stack. The SP is first incremented, and
+ * the data is then written to the position pointed by the new SP.
+ * Returns 0 on success or EMU51_IRAM_OUT_OF_RANGE on stack overflow.
+ */
+static inline int stack_push(emu51 *m, uint8_t data)
+{
+	++m->sfr[SFR_SP];
+	return indirect_addr_write(m, SFR_BASE_ADDR + SFR_SP, data);
 }
 
 /* Implementations of 8051/8052 instructions.
@@ -67,6 +108,7 @@ static inline int indirect_addr_read(emu51 *m, uint8_t ptr, uint8_t *out)
 #define DPTR ((m->sfr[SFR_DPH] << 8) | m->sfr[SFR_DPL])
 #define ACC m->sfr[SFR_ACC]
 #define PSW m->sfr[SFR_PSW]
+#define SP m->sfr[SFR_SP]
 
 #define BANK_BASE_ADDR (m->sfr[SFR_PSW] & (PSW_RS1 | PSW_RS0))
 #define REG_R(n) m->iram_lower[BANK_BASE_ADDR + (n)]
@@ -80,6 +122,34 @@ static inline int indirect_addr_read(emu51 *m, uint8_t ptr, uint8_t *out)
  */
 DEFINE_HANDLER(nop_handler)
 {
+	return 0;
+}
+
+/* operation: ACALL
+ * function: absolute call within 2k block
+ */
+DEFINE_HANDLER(acall_handler)
+{
+	/* push PC onto the stack, least-significant-byte first,
+	 * most-significant-byte second. */
+	int err = stack_push(m, PC & 0xff);
+	if (err)
+		return err;
+	err = stack_push(m, (PC >> 8) & 0xff);
+	if (err)
+		return err;
+
+	/* the first 3 bit of the opcode is the page number */
+	int page = (OPCODE >> 5) & 0x7;
+
+	/* replace the lower 11 bits of PC with {page, OPERAND1} */
+	PC = (PC & 0xf800) | (page << 8) | OPERAND1;
+
+	/* callbacks */
+	CALLBACK(sfr_update, SFR_SP);
+	CALLBACK(iram_update, SP - 1);
+	CALLBACK(iram_update, SP);
+
 	return 0;
 }
 
@@ -281,7 +351,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x0e),
 	NOT_IMPLEMENTED(0x0f),
 	NOT_IMPLEMENTED(0x10),
-	NOT_IMPLEMENTED(0x11),
+	INSTR(0x11, "ACALL", 2, 2, acall_handler),
 	NOT_IMPLEMENTED(0x12),
 	NOT_IMPLEMENTED(0x13),
 	NOT_IMPLEMENTED(0x14),
@@ -313,7 +383,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x2e),
 	NOT_IMPLEMENTED(0x2f),
 	NOT_IMPLEMENTED(0x30),
-	NOT_IMPLEMENTED(0x31),
+	INSTR(0x31, "ACALL", 2, 2, acall_handler),
 	NOT_IMPLEMENTED(0x32),
 	NOT_IMPLEMENTED(0x33),
 	NOT_IMPLEMENTED(0x34),
@@ -345,7 +415,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x4e),
 	NOT_IMPLEMENTED(0x4f),
 	NOT_IMPLEMENTED(0x50),
-	NOT_IMPLEMENTED(0x51),
+	INSTR(0x51, "ACALL", 2, 2, acall_handler),
 	NOT_IMPLEMENTED(0x52),
 	NOT_IMPLEMENTED(0x53),
 	NOT_IMPLEMENTED(0x54),
@@ -377,7 +447,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x6e),
 	NOT_IMPLEMENTED(0x6f),
 	NOT_IMPLEMENTED(0x70),
-	NOT_IMPLEMENTED(0x71),
+	INSTR(0x71, "ACALL", 2, 2, acall_handler),
 	NOT_IMPLEMENTED(0x72),
 	INSTR(0x73, "JMP", 1, 2, jmp_handler),
 	NOT_IMPLEMENTED(0x74),
@@ -409,7 +479,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x8e),
 	NOT_IMPLEMENTED(0x8f),
 	NOT_IMPLEMENTED(0x90),
-	NOT_IMPLEMENTED(0x91),
+	INSTR(0x91, "ACALL", 2, 2, acall_handler),
 	NOT_IMPLEMENTED(0x92),
 	INSTR(0x93, "MOVC", 1, 2, movc_dptr_handler),
 	NOT_IMPLEMENTED(0x94),
@@ -441,7 +511,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0xae),
 	NOT_IMPLEMENTED(0xaf),
 	NOT_IMPLEMENTED(0xb0),
-	NOT_IMPLEMENTED(0xb1),
+	INSTR(0xb1, "ACALL", 2, 2, acall_handler),
 	NOT_IMPLEMENTED(0xb2),
 	NOT_IMPLEMENTED(0xb3),
 	INSTR(0xb4, "CJNE", 3, 2, cjne_a_data_handler),
@@ -473,7 +543,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0xce),
 	NOT_IMPLEMENTED(0xcf),
 	NOT_IMPLEMENTED(0xd0),
-	NOT_IMPLEMENTED(0xd1),
+	INSTR(0xd1, "ACALL", 2, 2, acall_handler),
 	NOT_IMPLEMENTED(0xd2),
 	NOT_IMPLEMENTED(0xd3),
 	NOT_IMPLEMENTED(0xd4),
@@ -505,7 +575,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0xee),
 	NOT_IMPLEMENTED(0xef),
 	NOT_IMPLEMENTED(0xf0),
-	NOT_IMPLEMENTED(0xf1),
+	INSTR(0xf1, "ACALL", 2, 2, acall_handler),
 	NOT_IMPLEMENTED(0xf2),
 	NOT_IMPLEMENTED(0xf3),
 	NOT_IMPLEMENTED(0xf4),
