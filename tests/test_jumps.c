@@ -317,6 +317,32 @@ void test_ljmp(void **state)
 	free_test_data(data);
 }
 
+void test_lcall(void **state)
+{
+	testdata *data = alloc_test_data();
+	emu51 *m = data->m;
+	int err;
+
+	PC(m) = 0x1234;
+	SP(m) = 0x30;
+	iram_write(m, 0x30, 0xaa);
+	iram_write(m, 0x31, 0xff);
+	iram_write(m, 0x32, 0xff);
+	expect_value(callback_sfr_update, index, SFR_SP);
+	expect_value(callback_iram_update, addr, 0x31);
+	expect_value(callback_iram_update, addr, 0x32);
+	err = run_instr(INSTR3(0x12, 0x57, 0x83), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(PC(m), 0x5783);
+	assert_int_equal(SP(m), 0x32);
+	assert_int_equal(iram_read(m, 0x30), 0xaa);
+	assert_int_equal(iram_read(m, 0x31), 0x34);
+	assert_int_equal(iram_read(m, 0x32), 0x12);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE | CB_IRAM_UPDATE);
+
+	free_test_data(data);
+}
+
 void test_sjmp(void **state)
 {
 	testdata *data = alloc_test_data();
@@ -672,6 +698,7 @@ int main()
 		cmocka_unit_test(test_ajmp),
 		cmocka_unit_test(test_jmp),
 		cmocka_unit_test(test_ljmp),
+		cmocka_unit_test(test_lcall),
 		cmocka_unit_test(test_sjmp),
 		cmocka_unit_test(test_movc),
 		cmocka_unit_test(test_cjne),

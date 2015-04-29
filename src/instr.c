@@ -187,6 +187,31 @@ DEFINE_HANDLER(ljmp_handler)
 	return 0;
 }
 
+/* operation: LCALL
+ * function: long call
+ */
+DEFINE_HANDLER(lcall_handler)
+{
+	/* push PC onto stack, low-byte first, high-byte second. */
+	int err = stack_push(m, PC & 0xff);
+	if (err)
+		return err;
+	err = stack_push(m, (PC >> 8) & 0xff);
+	if (err)
+		return err;
+
+	/* set PC to target address */
+	uint16_t target_addr = (OPERAND1 << 8) | OPERAND2;
+	PC = target_addr;
+
+	/* callbacks */
+	CALLBACK(sfr_update, SFR_SP);
+	CALLBACK(iram_update, SP - 1);
+	CALLBACK(iram_update, SP);
+
+	return 0;
+}
+
 /* operation: SJMP
  * function: relative jump -128~+127 bytes
  */
@@ -352,7 +377,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x0f),
 	NOT_IMPLEMENTED(0x10),
 	INSTR(0x11, "ACALL", 2, 2, acall_handler),
-	NOT_IMPLEMENTED(0x12),
+	INSTR(0x12, "LCALL", 3, 2, lcall_handler),
 	NOT_IMPLEMENTED(0x13),
 	NOT_IMPLEMENTED(0x14),
 	NOT_IMPLEMENTED(0x15),
