@@ -5,8 +5,8 @@
 
 /* Read data from immediate address.
  * An immediate address can refer to:
- *	 1. internal ram, if addr < 0x80
- *	 2. SFR, if addr >= 0x80
+ *  1. internal ram, if addr < 0x80
+ *  2. SFR, if addr >= 0x80
  */
 static inline uint8_t direct_addr_read(emu51 *m, uint8_t addr)
 {
@@ -232,7 +232,7 @@ DEFINE_HANDLER(sjmp_handler)
 	int8_t reladdr = OPERAND1;
 
 	/* FIXME: what happens when jumping across program memory border
-	 *	       (e.g. PC == 0, reladdr == -1)?
+	 *        (e.g. PC == 0, reladdr == -1)?
 	 * 1. wraps over? [current implementation]
 	 * 2. error?
 	 */
