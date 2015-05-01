@@ -14,6 +14,10 @@ else()
 	add_test(test_jumps test_jumps)
 	target_link_libraries(test_jumps emu51 cmocka)
 
+	add_executable(test_mem test_mem.c)
+	add_test(test_mem test_mem)
+	target_link_libraries(test_mem emu51 cmocka)
+
 	if (GCOV_ENABLED)
 		add_custom_target(coverage
 			sh ${PROJECT_SOURCE_DIR}/tests/coverage-lcov.sh ${PROJECT_BINARY_DIR}
