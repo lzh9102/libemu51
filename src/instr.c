@@ -201,6 +201,18 @@ DEFINE_HANDLER(jz_handler)
 	return 0;
 }
 
+/* operation: JNZ
+ * function: jump if accumulator not zero
+ */
+DEFINE_HANDLER(jnz_handler)
+{
+	int8_t reladdr = OPERAND1; /* -128~127 */
+
+	if (ACC != 0)
+		PC += reladdr;
+	return 0;
+}
+
 /* operation: LJMP
  * function: long jump
  */
@@ -495,7 +507,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x6d),
 	NOT_IMPLEMENTED(0x6e),
 	NOT_IMPLEMENTED(0x6f),
-	NOT_IMPLEMENTED(0x70),
+	INSTR(0x70, "JNZ", 2, 2, jnz_handler),
 	INSTR(0x71, "ACALL", 2, 2, acall_handler),
 	NOT_IMPLEMENTED(0x72),
 	INSTR(0x73, "JMP", 1, 2, jmp_handler),
