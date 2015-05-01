@@ -189,6 +189,19 @@ DEFINE_HANDLER(jc_handler)
 	return 0;
 }
 
+/* operation: JNC
+ * function: jump if carry not set
+ */
+DEFINE_HANDLER(jnc_handler)
+{
+	int8_t reladdr = OPERAND1; /* reladdr is signed -128~127 */
+
+	if ((PSW & PSW_C) == 0)
+		PC += reladdr;
+	return 0;
+}
+
+
 /* operation: JZ
  * function: jump if accumulator zero
  */
@@ -475,7 +488,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x4d),
 	NOT_IMPLEMENTED(0x4e),
 	NOT_IMPLEMENTED(0x4f),
-	NOT_IMPLEMENTED(0x50),
+	INSTR(0x50, "JNC", 2, 2, jnc_handler),
 	INSTR(0x51, "ACALL", 2, 2, acall_handler),
 	NOT_IMPLEMENTED(0x52),
 	NOT_IMPLEMENTED(0x53),
