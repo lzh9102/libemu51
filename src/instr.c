@@ -311,6 +311,27 @@ DEFINE_HANDLER(cjne_r_data_handler)
 	return general_cjne(m, REG_R(r_index), data, reladdr);
 }
 
+/* operation: DJNZ iram addr, reladdr
+ */
+DEFINE_HANDLER(djnz_iram_handler)
+{
+	uint8_t iram_addr = OPERAND1;
+	int8_t reladdr = OPERAND2;
+
+	/* decrement the data */
+	uint8_t new_value = direct_addr_read(m, iram_addr) - 1;
+	direct_addr_write(m, iram_addr, new_value);
+
+	/* jump if data is 0 after decrementing */
+	if (new_value == 0)
+		PC += reladdr;
+
+	/* ACC is updated */
+	CALLBACK(sfr_update, SFR_ACC);
+
+	return 0;
+}
+
 /* End of instruction handlers */
 
 /* restore diagnostic settings */
@@ -542,7 +563,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0xd2),
 	NOT_IMPLEMENTED(0xd3),
 	NOT_IMPLEMENTED(0xd4),
-	NOT_IMPLEMENTED(0xd5),
+	INSTR(0xd5, "DJNZ", 3, 2, djnz_iram_handler),
 	NOT_IMPLEMENTED(0xd6),
 	NOT_IMPLEMENTED(0xd7),
 	NOT_IMPLEMENTED(0xd8),

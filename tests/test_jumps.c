@@ -810,6 +810,52 @@ void test_cjne(void **state)
 	free_test_data(data);
 }
 
+void test_djnz(void **state)
+{
+	testdata *data = alloc_test_data();
+	emu51 *m = data->m;
+	uint8_t iram_addr;
+	int8_t reladdr;
+	int err;
+	int orig_pc = 70;
+
+	/* DJNZ iram addr, reladdr (opcode = 0xd5) */
+
+	iram_addr = SFR_ACC + SFR_BASE_ADDR; /* ACC */
+	m->sfr[SFR_ACC] = 2; /* initial A = 2 */
+	reladdr = -63;
+	m->pc = orig_pc;
+
+	/* djnz A, 63 (before: A = 2; after: A = 1; jump: false) */
+	expect_value(callback_sfr_update, index, SFR_ACC);
+	err = run_instr(INSTR3(0xd5, iram_addr, reladdr), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, orig_pc);
+	assert_int_equal(m->sfr[SFR_ACC], 1);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+
+	/* djnz A, 63 (before: A = 1; after: A = 0; jump: true) */
+	expect_value(callback_sfr_update, index, SFR_ACC);
+	err = run_instr(INSTR3(0xd5, iram_addr, reladdr), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, orig_pc + reladdr);
+	assert_int_equal(m->sfr[SFR_ACC], 0);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+
+	/* djnz A, 63 (before: A = 0; after: A = 255; jump: false) */
+	expect_value(callback_sfr_update, index, SFR_ACC);
+	m->pc = orig_pc;
+	err = run_instr(INSTR3(0xd5, iram_addr, reladdr), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, orig_pc);
+	assert_int_equal(m->sfr[SFR_ACC], 255);
+	assert_emu51_callbacks(data, CB_SFR_UPDATE);
+
+	/* TODO: add tests for DJNZ Rn, reladdr */
+
+	free_test_data(data);
+}
+
 /* end of test functions */
 
 int main()
@@ -826,6 +872,7 @@ int main()
 		cmocka_unit_test(test_sjmp),
 		cmocka_unit_test(test_movc),
 		cmocka_unit_test(test_cjne),
+		cmocka_unit_test(test_djnz),
 	};
 	/* don't use setup and teardown as cmocka doesn't report memory bugs in them
 	 */

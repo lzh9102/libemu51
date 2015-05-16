@@ -270,9 +270,9 @@ static void write_random_data_to_memories(testdata *data)
 
 /* the highest byte (0xff000000) is used to store instruction length */
 #define INSTR1(opcode) ((0x01 << 24) | (opcode))
-#define INSTR2(opcode, op1) ((0x02 << 24) | ((op1) << 8) | (opcode))
+#define INSTR2(opcode, op1) ((0x02 << 24) | (((uint8_t)op1) << 8) | (opcode))
 #define INSTR3(opcode, op1, op2) ((0x03 << 24) | \
-		((op2) << 16) | ((op1) << 8) | (opcode))
+		(((uint8_t)op2) << 16) | (((uint8_t)op1) << 8) | (opcode))
 
 /* put the instruction in pc and run it */
 static int run_instr(uint32_t instr, testdata *data)
