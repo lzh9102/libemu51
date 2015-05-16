@@ -230,6 +230,19 @@ void test_stack_push(void **state)
 	assert_int_equal(err, EMU51_IRAM_OUT_OF_RANGE);
 }
 
+void test_relative_jump(void **state)
+{
+	emu51 *m = *state;
+
+	m->pc = 3;
+	relative_jump(m, 127);
+	assert_int_equal(m->pc, 130);
+
+	m->pc = 129;
+	relative_jump(m, -128);
+	assert_int_equal(m->pc, 1);
+}
+
 int main()
 {
 #define TEST_ENTRY(name) cmocka_unit_test_setup_teardown(name, setup, teardown)
@@ -239,6 +252,7 @@ int main()
 		TEST_ENTRY(test_indirect_addr_read),
 		TEST_ENTRY(test_indirect_addr_write),
 		TEST_ENTRY(test_stack_push),
+		TEST_ENTRY(test_relative_jump),
 	};
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }

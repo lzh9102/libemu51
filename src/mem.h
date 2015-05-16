@@ -89,4 +89,17 @@ static inline int stack_push(emu51 *m, uint8_t data)
 	return indirect_addr_write(m, SFR_BASE_ADDR + SFR_SP, data);
 }
 
+/* Add reladdr to the program counter.
+ * reladdr: signed 8-bit offset
+ */
+static inline void relative_jump(emu51 *m, int8_t reladdr)
+{
+	/* FIXME: what happens when jumping across program memory border
+	 *        (e.g. PC == 0, reladdr == -1)?
+	 * 1. wraps over? [current implementation]
+	 * 2. error?
+	 */
+	m->pc += reladdr;
+}
+
 #endif /* _MEM_H_ */
