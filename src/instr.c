@@ -228,7 +228,7 @@ DEFINE_HANDLER(movc_pc_handler)
 
 /* perform CJNE given value of operand1, operand2 and reladdr */
 static inline int general_cjne(emu51 *m, uint8_t op1, uint8_t op2,
-		uint8_t reladdr)
+		int8_t reladdr)
 {
 	/* compute carry flag: set only when op1 < op2 */
 	if (op1 < op2)
@@ -252,7 +252,7 @@ static inline int general_cjne(emu51 *m, uint8_t op1, uint8_t op2,
 DEFINE_HANDLER(cjne_a_data_handler)
 {
 	uint8_t data = OPERAND1;
-	uint8_t reladdr = OPERAND2;
+	int8_t reladdr = OPERAND2;
 
 	return general_cjne(m, ACC, data, reladdr);
 }
@@ -263,7 +263,7 @@ DEFINE_HANDLER(cjne_a_data_handler)
 DEFINE_HANDLER(cjne_a_addr_handler)
 {
 	uint8_t addr = OPERAND1;
-	uint8_t reladdr = OPERAND2;
+	int8_t reladdr = OPERAND2;
 	uint8_t data = direct_addr_read(m, addr);
 
 	return general_cjne(m, ACC, data, reladdr);
@@ -275,7 +275,7 @@ DEFINE_HANDLER(cjne_a_addr_handler)
 DEFINE_HANDLER(cjne_deref_r_data_handler)
 {
 	uint8_t data = OPERAND1;
-	uint8_t reladdr = OPERAND2;
+	int8_t reladdr = OPERAND2;
 
 	/* The last bit of opcode determines whether to use R0 or R1.
 	 * last bit == 0 => R0
@@ -298,7 +298,7 @@ DEFINE_HANDLER(cjne_deref_r_data_handler)
 DEFINE_HANDLER(cjne_r_data_handler)
 {
 	uint8_t data = OPERAND1;
-	uint8_t reladdr = OPERAND2;
+	int8_t reladdr = OPERAND2;
 
 	/* The last 3 bit of opcode is the R number (0~7) */
 	uint8_t r_index = OPCODE & 0x07;
