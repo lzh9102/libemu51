@@ -106,7 +106,7 @@ DEFINE_HANDLER(jc_handler)
 	int8_t reladdr = OPERAND1; /* reladdr is signed -128~127 */
 
 	if ((PSW & PSW_C) == PSW_C)
-		PC += reladdr;
+		relative_jump(m, reladdr);
 	return 0;
 }
 
@@ -118,7 +118,7 @@ DEFINE_HANDLER(jnc_handler)
 	int8_t reladdr = OPERAND1; /* reladdr is signed -128~127 */
 
 	if ((PSW & PSW_C) == 0)
-		PC += reladdr;
+		relative_jump(m, reladdr);
 	return 0;
 }
 
@@ -131,7 +131,7 @@ DEFINE_HANDLER(jz_handler)
 	int8_t reladdr = OPERAND1; /* -128~127 */
 
 	if (ACC == 0)
-		PC += reladdr;
+		relative_jump(m, reladdr);
 	return 0;
 }
 
@@ -143,7 +143,7 @@ DEFINE_HANDLER(jnz_handler)
 	int8_t reladdr = OPERAND1; /* -128~127 */
 
 	if (ACC != 0)
-		PC += reladdr;
+		relative_jump(m, reladdr);
 	return 0;
 }
 
@@ -189,12 +189,7 @@ DEFINE_HANDLER(sjmp_handler)
 {
 	int8_t reladdr = OPERAND1;
 
-	/* FIXME: what happens when jumping across program memory border
-	 *        (e.g. PC == 0, reladdr == -1)?
-	 * 1. wraps over? [current implementation]
-	 * 2. error?
-	 */
-	PC += reladdr;
+	relative_jump(m, reladdr);
 
 	return 0;
 }
@@ -243,7 +238,7 @@ static inline int general_cjne(emu51 *m, uint8_t op1, uint8_t op2,
 
 	/* branch if not equal */
 	if (op1 != op2)
-		PC += reladdr;
+		relative_jump(m, reladdr);
 
 	/* PSW is updated */
 	CALLBACK(sfr_update, SFR_PSW);
@@ -324,7 +319,7 @@ DEFINE_HANDLER(djnz_iram_handler)
 
 	/* jump if data is 0 after decrementing */
 	if (new_value == 0)
-		PC += reladdr;
+		relative_jump(m, reladdr);
 
 	/* ACC is updated */
 	CALLBACK(sfr_update, SFR_ACC);

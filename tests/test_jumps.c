@@ -776,33 +776,33 @@ void test_cjne(void **state)
 	for (i = 0; i <= 7; i++) {
 		opcode = 0xb8 + i;
 		/* Rn < data */
-		m->pc = 5;
+		m->pc = 30;
 		R_REG(m, i) = 0x6f;
 		PSW(m) = 0;
 		expect_value(callback_sfr_update, index, SFR_PSW);
-		err = run_instr(INSTR3(opcode, 0x70, 0x32), data);
+		err = run_instr(INSTR3(opcode, 0x70, -5), data);
 		assert_int_equal(err, 0);
-		assert_int_equal(m->pc, 5 + 0x32); /* should branch */
+		assert_int_equal(m->pc, 25); /* should branch */
 		assert_int_equal(PSW(m) & PSW_C, PSW_C); /* carry set */
 		assert_emu51_callbacks(data, CB_SFR_UPDATE);
 		/* Rn == data */
-		m->pc = 5;
+		m->pc = 30;
 		R_REG(m, i) = 0x70;
 		PSW(m) = PSW_C;
 		expect_value(callback_sfr_update, index, SFR_PSW);
-		err = run_instr(INSTR3(opcode, 0x70, 0x32), data);
+		err = run_instr(INSTR3(opcode, 0x70, -5), data);
 		assert_int_equal(err, 0);
-		assert_int_equal(m->pc, 5); /* should not branch */
+		assert_int_equal(m->pc, 30); /* should not branch */
 		assert_int_equal(PSW(m) & PSW_C, 0); /* carry clear */
 		assert_emu51_callbacks(data, CB_SFR_UPDATE);
 		/* Rn > data */
-		m->pc = 5;
+		m->pc = 30;
 		R_REG(m, i) = 0x71;
 		PSW(m) = PSW_C;
 		expect_value(callback_sfr_update, index, SFR_PSW);
-		err = run_instr(INSTR3(opcode, 0x70, 0x32), data);
+		err = run_instr(INSTR3(opcode, 0x70, -5), data);
 		assert_int_equal(err, 0);
-		assert_int_equal(m->pc, 5 + 0x32); /* should branch */
+		assert_int_equal(m->pc, 25); /* should branch */
 		assert_int_equal(PSW(m) & PSW_C, 0); /* carry clear */
 		assert_emu51_callbacks(data, CB_SFR_UPDATE);
 	}
