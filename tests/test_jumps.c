@@ -818,6 +818,7 @@ void test_djnz(void **state)
 	int8_t reladdr;
 	int err;
 	int orig_pc = 70;
+	int regno;
 
 	/* DJNZ iram addr, reladdr (opcode = 0xd5) */
 
@@ -852,7 +853,33 @@ void test_djnz(void **state)
 	assert_int_equal(m->sfr[SFR_ACC], 255);
 	assert_emu51_callbacks(data, CB_SFR_UPDATE);
 
-	/* TODO: add tests for DJNZ Rn, reladdr */
+	/* DJNZ Rn, reladdr (opcode = 0xd8~0xdf) */
+	for (regno = 0; regno < 8; regno++) {
+		int opcode = 0xd8 + regno;
+
+		R_REG(m, regno) = 2;
+
+		/* djnz Rn, -32 (before: Rn = 2; after: Rn = 1; jump: true) */
+		m->pc = 64;
+		err = run_instr(INSTR2(opcode, -32), data);
+		assert_int_equal(err, 0);
+		assert_int_equal(m->pc, 64 - 32);
+		assert_int_equal(R_REG(m, regno), 1);
+
+		/* djnz Rn, -32 (before: Rn = 1: after: Rn = 0: jump: false) */
+		m->pc = 64;
+		err = run_instr(INSTR2(opcode, -32), data);
+		assert_int_equal(err, 0);
+		assert_int_equal(m->pc, 64);
+		assert_int_equal(R_REG(m, regno), 0);
+
+		/* djnz Rn, -32 (before: Rn = 0: after: Rn = 255: jump: true) */
+		m->pc = 64;
+		err = run_instr(INSTR2(opcode, -32), data);
+		assert_int_equal(err, 0);
+		assert_int_equal(m->pc, 64 - 32);
+		assert_int_equal(R_REG(m, regno), 255);
+	}
 
 	free_test_data(data);
 }

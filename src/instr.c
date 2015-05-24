@@ -327,6 +327,20 @@ DEFINE_HANDLER(djnz_iram_handler)
 	return 0;
 }
 
+/* operation: DJNZ Rn, reladdr
+ */
+DEFINE_HANDLER(djnz_r_handler)
+{
+	uint8_t regno = OPCODE & 0x07;
+	int8_t reladdr = OPERAND1;
+
+	/* decrement Rn and jump if new value is not zero */
+	if (--REG_R(regno))
+		relative_jump(m, reladdr);
+
+	return 0;
+}
+
 /* End of instruction handlers */
 
 /* restore diagnostic settings */
@@ -561,14 +575,14 @@ const emu51_instr _emu51_instr_table[256] = {
 	INSTR(0xd5, "DJNZ", 3, 2, djnz_iram_handler),
 	NOT_IMPLEMENTED(0xd6),
 	NOT_IMPLEMENTED(0xd7),
-	NOT_IMPLEMENTED(0xd8),
-	NOT_IMPLEMENTED(0xd9),
-	NOT_IMPLEMENTED(0xda),
-	NOT_IMPLEMENTED(0xdb),
-	NOT_IMPLEMENTED(0xdc),
-	NOT_IMPLEMENTED(0xdd),
-	NOT_IMPLEMENTED(0xde),
-	NOT_IMPLEMENTED(0xdf),
+	INSTR(0xd8, "DJNZ", 2, 2, djnz_r_handler),
+	INSTR(0xd9, "DJNZ", 2, 2, djnz_r_handler),
+	INSTR(0xda, "DJNZ", 2, 2, djnz_r_handler),
+	INSTR(0xdb, "DJNZ", 2, 2, djnz_r_handler),
+	INSTR(0xdc, "DJNZ", 2, 2, djnz_r_handler),
+	INSTR(0xdd, "DJNZ", 2, 2, djnz_r_handler),
+	INSTR(0xde, "DJNZ", 2, 2, djnz_r_handler),
+	INSTR(0xdf, "DJNZ", 2, 2, djnz_r_handler),
 	NOT_IMPLEMENTED(0xe0),
 	INSTR(0xe1, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0xe2),
