@@ -317,8 +317,8 @@ DEFINE_HANDLER(djnz_iram_handler)
 	uint8_t new_value = direct_addr_read(m, iram_addr) - 1;
 	direct_addr_write(m, iram_addr, new_value);
 
-	/* jump if data is 0 after decrementing */
-	if (new_value == 0)
+	/* jump if data is not zero after decrementing */
+	if (new_value != 0)
 		relative_jump(m, reladdr);
 
 	/* ACC is updated */

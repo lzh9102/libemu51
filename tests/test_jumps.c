@@ -826,28 +826,29 @@ void test_djnz(void **state)
 	reladdr = -63;
 	m->pc = orig_pc;
 
-	/* djnz A, 63 (before: A = 2; after: A = 1; jump: false) */
+	/* djnz A, 63 (before: A = 2; after: A = 1; jump: true) */
 	expect_value(callback_sfr_update, index, SFR_ACC);
 	err = run_instr(INSTR3(0xd5, iram_addr, reladdr), data);
 	assert_int_equal(err, 0);
-	assert_int_equal(m->pc, orig_pc);
+	assert_int_equal(m->pc, orig_pc + reladdr); /* jumps */
 	assert_int_equal(m->sfr[SFR_ACC], 1);
 	assert_emu51_callbacks(data, CB_SFR_UPDATE);
 
-	/* djnz A, 63 (before: A = 1; after: A = 0; jump: true) */
+	/* djnz A, 63 (before: A = 1; after: A = 0; jump: false) */
+	m->pc = orig_pc;
 	expect_value(callback_sfr_update, index, SFR_ACC);
 	err = run_instr(INSTR3(0xd5, iram_addr, reladdr), data);
 	assert_int_equal(err, 0);
-	assert_int_equal(m->pc, orig_pc + reladdr);
+	assert_int_equal(m->pc, orig_pc); /* does not jump */
 	assert_int_equal(m->sfr[SFR_ACC], 0);
 	assert_emu51_callbacks(data, CB_SFR_UPDATE);
 
-	/* djnz A, 63 (before: A = 0; after: A = 255; jump: false) */
+	/* djnz A, 63 (before: A = 0; after: A = 255; jump: true) */
 	expect_value(callback_sfr_update, index, SFR_ACC);
 	m->pc = orig_pc;
 	err = run_instr(INSTR3(0xd5, iram_addr, reladdr), data);
 	assert_int_equal(err, 0);
-	assert_int_equal(m->pc, orig_pc);
+	assert_int_equal(m->pc, orig_pc + reladdr); /* jumps */
 	assert_int_equal(m->sfr[SFR_ACC], 255);
 	assert_emu51_callbacks(data, CB_SFR_UPDATE);
 
