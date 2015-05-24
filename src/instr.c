@@ -327,6 +327,24 @@ DEFINE_HANDLER(djnz_iram_handler)
 	return 0;
 }
 
+/* operation: JB bit addr, reladdr
+ */
+DEFINE_HANDLER(jb_handler)
+{
+	uint8_t bit_addr = OPERAND1;
+	int8_t reladdr = OPERAND2;
+
+	int bit_value = bit_read(m, bit_addr);
+	if (bit_value < 0) /* error */
+		return bit_value;
+
+	/* jump if bit set */
+	if (bit_value)
+		relative_jump(m, reladdr);
+
+	return 0;
+}
+
 /* operation: DJNZ Rn, reladdr
  */
 DEFINE_HANDLER(djnz_r_handler)
@@ -391,7 +409,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x1d),
 	NOT_IMPLEMENTED(0x1e),
 	NOT_IMPLEMENTED(0x1f),
-	NOT_IMPLEMENTED(0x20),
+	INSTR(0x20, "JB", 3, 2, jb_handler),
 	INSTR(0x21, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0x22),
 	NOT_IMPLEMENTED(0x23),

@@ -884,6 +884,34 @@ void test_djnz(void **state)
 	free_test_data(data);
 }
 
+void test_jb(void **state)
+{
+	testdata *data = alloc_test_data();
+	emu51 *m = data->m;
+	uint8_t opcode = 0x20;
+	int err;
+
+	m->pc = 128;
+	m->iram_lower[0x20] = 0x08; /* bit[3] */
+	err = run_instr(INSTR3(opcode, 3, -8), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 120); /* jumps */
+	assert_int_equal(m->iram_lower[0x20], 0x08); /* jb doesn't change the bit */
+
+	m->pc = 128;
+	m->iram_lower[0x20] = 0x00;
+	err = run_instr(INSTR3(opcode, 3, -8), data);
+	assert_int_equal(err, 0);
+	assert_int_equal(m->pc, 128); /* doesn't jump */
+	assert_int_equal(m->iram_lower[0x20], 0x00); /* jb doesn't change the bit */
+
+	/* bit address >= 128 is invalid */
+	err = run_instr(INSTR3(opcode, 128, 0), data);
+	assert_int_equal(err, EMU51_BIT_OUT_OF_RANGE);
+
+	free_test_data(data);
+}
+
 /* end of test functions */
 
 int main()
@@ -901,6 +929,7 @@ int main()
 		cmocka_unit_test(test_movc),
 		cmocka_unit_test(test_cjne),
 		cmocka_unit_test(test_djnz),
+		cmocka_unit_test(test_jb),
 	};
 	/* don't use setup and teardown as cmocka doesn't report memory bugs in them
 	 */
