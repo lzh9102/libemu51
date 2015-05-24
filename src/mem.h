@@ -101,6 +101,28 @@ static inline int bit_read(emu51 *m, uint8_t addr)
 	}
 }
 
+/* Write bit memory.
+ *
+ * value: the bit value to write (0 or 1)
+ *
+ * Returns 0 on success, negative error code on error.
+ */
+static inline int bit_write(emu51 *m, uint8_t addr, int value)
+{
+	if (addr < 0x80) {
+		int byte_offset = addr / 8;
+		int bit_index = addr % 8;
+		uint8_t bitmap = (1 << bit_index);
+		if (value == 0) /* clear the bit */
+			m->iram_lower[BIT_ADDR_BASE + byte_offset] &= ~bitmap;
+		else /* set the bit */
+			m->iram_lower[BIT_ADDR_BASE + byte_offset] |= bitmap;
+		return 0;
+	} else { /* bit address >= 128 is invalid */
+		return EMU51_BIT_OUT_OF_RANGE;
+	}
+}
+
 /* Push a value onto the stack. The SP is first incremented, and
  * the data is then written to the position pointed by the new SP.
  * Returns 0 on success or EMU51_IRAM_OUT_OF_RANGE on stack overflow.

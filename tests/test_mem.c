@@ -224,6 +224,26 @@ void test_bit_read(void **state)
 	assert_int_equal(bit_read(m, 128), EMU51_BIT_OUT_OF_RANGE);
 }
 
+void test_bit_write(void **state)
+{
+	emu51 *m = *state;
+
+	m->iram_lower[0x21] = 0xff; /* bit addess 8~15 */
+	assert_int_equal(bit_write(m, 9, 0), 0);
+	assert_int_equal(m->iram_lower[0x21], 0xfd);
+	assert_int_equal(bit_write(m, 9, 1), 0);
+	assert_int_equal(m->iram_lower[0x21], 0xff);
+
+	m->iram_lower[0x2f] = 0x00; /* bit address 120~127 */
+	assert_int_equal(bit_write(m, 126, 1), 0);
+	assert_int_equal(m->iram_lower[0x2f], 0x40);
+	assert_int_equal(bit_write(m, 126, 0), 0);
+	assert_int_equal(m->iram_lower[0x2f], 0x00);
+
+	/* bit address >= 128 is invalid */
+	assert_int_equal(bit_write(m, 128, 0), EMU51_BIT_OUT_OF_RANGE);
+}
+
 void test_stack_push(void **state)
 {
 	emu51 *m = *state;
@@ -292,6 +312,7 @@ int main()
 		TEST_ENTRY(test_indirect_addr_read),
 		TEST_ENTRY(test_indirect_addr_write),
 		TEST_ENTRY(test_bit_read),
+		TEST_ENTRY(test_bit_write),
 		TEST_ENTRY(test_stack_push),
 		TEST_ENTRY(test_relative_jump),
 	};
