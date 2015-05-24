@@ -327,9 +327,10 @@ DEFINE_HANDLER(djnz_iram_handler)
 	return 0;
 }
 
-/* operation: JB bit addr, reladdr
+/* operation: JB  bit addr, reladdr (opcode = 0x20)
+ *            JBC bit addr, reladdr (opcode = 0x10)
  */
-DEFINE_HANDLER(jb_handler)
+DEFINE_HANDLER(jb_jbc_handler)
 {
 	uint8_t bit_addr = OPERAND1;
 	int8_t reladdr = OPERAND2;
@@ -339,8 +340,12 @@ DEFINE_HANDLER(jb_handler)
 		return bit_value;
 
 	/* jump if bit set */
-	if (bit_value)
+	if (bit_value) {
+		/* clear the bit if the instruction is JBC */
+		if (OPCODE == 0x10)
+			bit_write(m, bit_addr, 0);
 		relative_jump(m, reladdr);
+	}
 
 	return 0;
 }
@@ -393,7 +398,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x0d),
 	NOT_IMPLEMENTED(0x0e),
 	NOT_IMPLEMENTED(0x0f),
-	NOT_IMPLEMENTED(0x10),
+	INSTR(0x10, "JBC", 3, 2, jb_jbc_handler),
 	INSTR(0x11, "ACALL", 2, 2, acall_handler),
 	INSTR(0x12, "LCALL", 3, 2, lcall_handler),
 	NOT_IMPLEMENTED(0x13),
@@ -409,7 +414,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x1d),
 	NOT_IMPLEMENTED(0x1e),
 	NOT_IMPLEMENTED(0x1f),
-	INSTR(0x20, "JB", 3, 2, jb_handler),
+	INSTR(0x20, "JB", 3, 2, jb_jbc_handler),
 	INSTR(0x21, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0x22),
 	NOT_IMPLEMENTED(0x23),
