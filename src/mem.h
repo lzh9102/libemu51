@@ -5,6 +5,8 @@
 
 #include <emu51.h>
 
+#define BIT_ADDR_BASE 0x20
+
 /* Read data from immediate address.
  * An immediate address can refer to:
  *  1. internal ram, if addr < 0x80
@@ -76,6 +78,26 @@ static inline int indirect_addr_write(emu51 *m, uint8_t ptr, uint8_t data)
 		} else { /* upper iram is not set */
 			return EMU51_IRAM_OUT_OF_RANGE;
 		}
+	}
+}
+
+/* Read bit memory.
+ *
+ * There are 128 bit variables located from 0x20 through 0x2f (16 bytes in
+ * total).
+ *
+ * Returns the bit value (0 or 1) on success, negative error code on error.
+ */
+static inline int bit_read(emu51 *m, uint8_t addr)
+{
+	if (addr < 0x80) {
+		int byte_offset = addr / 8;
+		int bit_index = addr % 8;
+		uint8_t bitmap = (1 << bit_index);
+		uint8_t byte_value = m->iram_lower[BIT_ADDR_BASE + byte_offset];
+		return (byte_value & bitmap) ? 1 : 0;
+	} else { /* bit address >= 128 is invalid */
+		return EMU51_BIT_OUT_OF_RANGE;
 	}
 }
 

@@ -184,6 +184,46 @@ void test_indirect_addr_write(void **state)
 	assert_int_equal(m->sfr[0], 0x00); /* make sure sfr is not clobbered */
 }
 
+void test_bit_read(void **state)
+{
+	emu51 *m = *state;
+
+	/* bit variables are located at 0x20~0x2f */
+
+	m->iram_lower[0x20] = 0xa6; /* bit07~bit00: 10100110 */
+	assert_int_equal(bit_read(m, 0), 0);
+	assert_int_equal(bit_read(m, 1), 1);
+	assert_int_equal(bit_read(m, 2), 1);
+	assert_int_equal(bit_read(m, 3), 0);
+	assert_int_equal(bit_read(m, 4), 0);
+	assert_int_equal(bit_read(m, 5), 1);
+	assert_int_equal(bit_read(m, 6), 0);
+	assert_int_equal(bit_read(m, 7), 1);
+
+	m->iram_lower[0x21] = 0x59; /* bit15~bit08: 01011001 */
+	assert_int_equal(bit_read(m, 8),  1);
+	assert_int_equal(bit_read(m, 9),  0);
+	assert_int_equal(bit_read(m, 10), 0);
+	assert_int_equal(bit_read(m, 11), 1);
+	assert_int_equal(bit_read(m, 12), 1);
+	assert_int_equal(bit_read(m, 13), 0);
+	assert_int_equal(bit_read(m, 14), 1);
+	assert_int_equal(bit_read(m, 15), 0);
+
+	m->iram_lower[0x2f] = 0xc7; /* bit127~bit120: 11000111 */
+	assert_int_equal(bit_read(m, 120), 1);
+	assert_int_equal(bit_read(m, 121), 1);
+	assert_int_equal(bit_read(m, 122), 1);
+	assert_int_equal(bit_read(m, 123), 0);
+	assert_int_equal(bit_read(m, 124), 0);
+	assert_int_equal(bit_read(m, 125), 0);
+	assert_int_equal(bit_read(m, 126), 1);
+	assert_int_equal(bit_read(m, 127), 1);
+
+	/* bit address >= 128 is invalid */
+	assert_int_equal(bit_read(m, 128), EMU51_BIT_OUT_OF_RANGE);
+}
+
 void test_stack_push(void **state)
 {
 	emu51 *m = *state;
@@ -251,6 +291,7 @@ int main()
 		TEST_ENTRY(test_direct_addr_write),
 		TEST_ENTRY(test_indirect_addr_read),
 		TEST_ENTRY(test_indirect_addr_write),
+		TEST_ENTRY(test_bit_read),
 		TEST_ENTRY(test_stack_push),
 		TEST_ENTRY(test_relative_jump),
 	};

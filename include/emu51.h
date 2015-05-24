@@ -216,6 +216,7 @@ enum emu51_errno
 {
 	EMU51_PMEM_OUT_OF_RANGE = -1, /**< Accessing beyond the program memory */
 	EMU51_IRAM_OUT_OF_RANGE = -2, /**< Accessing beyond the internal memory */
+	EMU51_BIT_OUT_OF_RANGE = -3, /**< Accessing bit address >= 128 */
 };
 
 /** Reset the emulator.
