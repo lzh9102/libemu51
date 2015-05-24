@@ -214,9 +214,8 @@ enum emu51_psw_mask
 /** Error codes returned by the emulator. */
 enum emu51_errno
 {
-	EMU51_SUCCESS = 0, /**< There is no error */
-	EMU51_PMEM_OUT_OF_RANGE, /**< Trying to read beyond the program memory */
-	EMU51_IRAM_OUT_OF_RANGE, /**< Trying to read beyond the internal memory */
+	EMU51_PMEM_OUT_OF_RANGE = -1, /**< Accessing beyond the program memory */
+	EMU51_IRAM_OUT_OF_RANGE = -2, /**< Accessing beyond the internal memory */
 };
 
 /** Reset the emulator.
