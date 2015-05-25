@@ -1,4 +1,4 @@
-/* tests for memory-accessing functions */
+/* tests for helper functions */
 
 #include <stdarg.h>
 #include <stddef.h>
@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 #include <emu51.h>
-#include <mem.h>
+#include <helpers.h>
 
 int setup(void **state)
 {

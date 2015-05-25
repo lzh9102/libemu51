@@ -1,7 +1,7 @@
-/* memory accessing functions */
+/* helper functions */
 
-#ifndef _MEM_H_
-#define _MEM_H_
+#ifndef _HELPERS_H_
+#define _HELPERS_H_
 
 #include <emu51.h>
 
@@ -146,4 +146,4 @@ static inline void relative_jump(emu51 *m, int8_t reladdr)
 	m->pc += reladdr;
 }
 
-#endif /* _MEM_H_ */
+#endif /* _HELPERS_H_ */

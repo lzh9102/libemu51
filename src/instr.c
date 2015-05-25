@@ -1,6 +1,6 @@
 #include <emu51.h>
 #include "instr.h"
-#include "mem.h"
+#include "helpers.h"
 
 /* Implementations of 8051/8052 instructions.
  *
