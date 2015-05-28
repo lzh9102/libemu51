@@ -365,6 +365,47 @@ DEFINE_HANDLER(djnz_r_handler)
 	return 0;
 }
 
+/* Add operand to ACC and set the flags.
+ * affected flags: C, AC, OV
+ */
+static void general_add(emu51 *m, uint8_t operand)
+{
+#define signbit(byte) ((byte) & 0x80)
+	uint16_t sum_with_carry = (uint16_t)ACC + (uint16_t)operand;
+
+	PSW &= ~(PSW_C | PSW_AC | PSW_OV); /* clear flags */
+
+	/* auxiliary carry: carry out at the 4th bit */
+	if ((sum_with_carry & 0x0f) != (ACC & 0x0f) + (operand & 0x0f))
+		PSW |= PSW_AC;
+
+	/* carry out: sum > 255 */
+	if (sum_with_carry > 0xff)
+		PSW |= PSW_C;
+
+	/* overflow: adding two numbers of the same sign but get a number with a
+	 * different sign
+	 */
+	if (signbit(ACC) == signbit(operand)
+			&& signbit(operand) != signbit(sum_with_carry))
+		PSW |= PSW_OV;
+
+	/* write result to ACC */
+	ACC = sum_with_carry & 0xff;
+
+#undef signbit
+}
+
+/* operation: ADD  A, operand (opcode: 0x24~0x2f)
+ *            ADDC A, operand (opcode: 0x34~0x3f)
+ */
+DEFINE_HANDLER(add_handler)
+{
+	/* ADD A, #data */
+	general_add(m, OPERAND1);
+	return 0;
+}
+
 /* End of instruction handlers */
 
 /* restore diagnostic settings */
@@ -419,7 +460,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	INSTR(0x21, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0x22),
 	NOT_IMPLEMENTED(0x23),
-	NOT_IMPLEMENTED(0x24),
+	INSTR(0x24, "ADD", 2, 1, add_handler),
 	NOT_IMPLEMENTED(0x25),
 	NOT_IMPLEMENTED(0x26),
 	NOT_IMPLEMENTED(0x27),
