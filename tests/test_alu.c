@@ -66,10 +66,12 @@ void test_add_addc(void **state)
 		struct arith_testcase *t = &add_testcases[i];
 		ACC(m) = t->reg;
 		PSW(m) = 0xff;
+		expect_value(callback_sfr_update, index, SFR_PSW);
 		err = run_instr(INSTR2(0x24, t->operand), data);
 		assert_int_equal(err, 0);
 		assert_int_equal(ACC(m), t->expected_result);
 		assert_int_equal(PSW(m) & (PSW_AC | PSW_OV | PSW_C), t->flags);
+		assert_emu51_callbacks(data, CB_SFR_UPDATE);
 	}
 
 	/* ADDC A, #data (opcode = 0x34) */
@@ -80,10 +82,12 @@ void test_add_addc(void **state)
 			PSW(m) = 0;
 		else
 			PSW(m) = PSW_C;
+		expect_value(callback_sfr_update, index, SFR_PSW);
 		err = run_instr(INSTR2(0x34, t->operand), data);
 		assert_int_equal(err, 0);
 		assert_int_equal(ACC(m), t->expected_result);
 		assert_int_equal(PSW(m) & (PSW_AC | PSW_OV | PSW_C), t->flags);
+		assert_emu51_callbacks(data, CB_SFR_UPDATE);
 	}
 
 	/* TODO: add tests for other ADD and ADDC instructions */

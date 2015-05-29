@@ -395,6 +395,9 @@ static void general_add(emu51 *m, uint8_t operand, uint8_t carry_in)
 	/* write result to ACC */
 	ACC = sum_with_carry & 0xff;
 
+	/* callbacks */
+	CALLBACK(sfr_update, SFR_PSW);
+
 #undef signbit
 }
 
