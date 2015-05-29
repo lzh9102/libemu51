@@ -365,18 +365,20 @@ DEFINE_HANDLER(djnz_r_handler)
 	return 0;
 }
 
-/* Add operand to ACC and set the flags.
+/* ACC <- ACC + operand + carry_in
  * affected flags: C, AC, OV
  */
-static void general_add(emu51 *m, uint8_t operand)
+static void general_add(emu51 *m, uint8_t operand, uint8_t carry_in)
 {
 #define signbit(byte) ((byte) & 0x80)
-	uint16_t sum_with_carry = (uint16_t)ACC + (uint16_t)operand;
+	uint16_t sum_with_carry;
+	carry_in &= 1; /* only the lowest bit of carry_in is used */
+	sum_with_carry = (uint16_t)ACC + (uint16_t)operand + carry_in;
 
 	PSW &= ~(PSW_C | PSW_AC | PSW_OV); /* clear flags */
 
 	/* auxiliary carry: carry out at the 4th bit */
-	if ((sum_with_carry & 0x0f) != (ACC & 0x0f) + (operand & 0x0f))
+	if ((sum_with_carry & 0x0f) != (ACC & 0x0f) + (operand & 0x0f) + carry_in)
 		PSW |= PSW_AC;
 
 	/* carry out: sum > 255 */
@@ -401,8 +403,17 @@ static void general_add(emu51 *m, uint8_t operand)
  */
 DEFINE_HANDLER(add_handler)
 {
+	uint8_t carry_in = 0;
+	uint8_t operand = OPERAND1;
+
+	/* 0x2* -> ADD (carry_in = 0)
+	 * 0x3* -> ADDC (carry_in = carry flag)
+	 */
+	if ((OPCODE & 0xf0) == 0x30 && (PSW & PSW_C))
+		carry_in = 1;
+
 	/* ADD A, #data */
-	general_add(m, OPERAND1);
+	general_add(m, operand, carry_in);
 	return 0;
 }
 
@@ -476,7 +487,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	INSTR(0x31, "ACALL", 2, 2, acall_handler),
 	NOT_IMPLEMENTED(0x32),
 	NOT_IMPLEMENTED(0x33),
-	NOT_IMPLEMENTED(0x34),
+	INSTR(0x34, "ADDC", 2, 1, add_handler),
 	NOT_IMPLEMENTED(0x35),
 	NOT_IMPLEMENTED(0x36),
 	NOT_IMPLEMENTED(0x37),

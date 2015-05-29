@@ -2,7 +2,7 @@
 
 #include "test_instr_common.h"
 
-struct arith_testdata {
+struct arith_testcase {
 	uint8_t reg;      /* original value of the target register */
 	uint8_t operand;  /* value of the operand */
 	uint8_t carry_in; /* carry in (0 or 1) */
@@ -17,28 +17,70 @@ void test_add_addc(void **state)
 	int err;
 	int i;
 
-	struct arith_testdata testcases[] = {
+	struct arith_testcase add_testcases[] = {
 	/* { reg, operand, carry_in, result, flags } */
 		{ 0x00, 0x00, 0, 0x00, 0 },
 		{ 0x0a, 0x05, 0, 0x0f, 0 },
+		{ 0x0a, 0x05, 1, 0x0f, 0 },
 		{ 0x0a, 0x06, 0, 0x10, PSW_AC },
 		{ 0x11, 0x12, 0, 0x23, 0 },
 		{ 0x11, 0x1e, 0, 0x2f, 0 },
+		{ 0x11, 0x1e, 1, 0x2f, 0 },
 		{ 0x11, 0x1f, 0, 0x30, PSW_AC },
 		{ 0x70, 0x0f, 0, 0x7f, 0 },
+		{ 0x70, 0x0f, 1, 0x7f, 0 },
 		{ 0x70, 0x10, 0, 0x80, PSW_OV },
 		{ 0x80, 0x7f, 0, 0xff, 0 },
+		{ 0x80, 0x7f, 1, 0xff, 0 },
 		{ 0x80, 0x80, 0, 0x00, PSW_C | PSW_OV },
 		{ 0xf0, 0x13, 0, 0x03, PSW_C },
 	};
-	const int testcase_count = sizeof(testcases)/sizeof(struct arith_testdata);
+	const int add_testcase_count = sizeof(add_testcases)/sizeof(struct arith_testcase);
 
-	/* ADD A, #data (opcode = 0x24) */
-	for (i = 0; i < testcase_count; i++) {
-		struct arith_testdata *t = &testcases[i];
+	struct arith_testcase addc_testcases[] = {
+	/* { reg, operand, carry_in, result, flags } */
+		{ 0x00, 0x00, 0, 0x00, 0 },
+		{ 0x0a, 0x05, 0, 0x0f, 0 },
+		{ 0x0a, 0x05, 1, 0x10, PSW_AC },
+		{ 0x0a, 0x06, 0, 0x10, PSW_AC },
+		{ 0x11, 0x12, 0, 0x23, 0 },
+		{ 0x11, 0x1e, 0, 0x2f, 0 },
+		{ 0x11, 0x1e, 1, 0x30, PSW_AC },
+		{ 0x11, 0x1f, 0, 0x30, PSW_AC },
+		{ 0x70, 0x0f, 0, 0x7f, 0 },
+		{ 0x70, 0x0f, 1, 0x80, PSW_OV | PSW_AC },
+		{ 0x70, 0x10, 0, 0x80, PSW_OV },
+		{ 0x80, 0x7f, 0, 0xff, 0 },
+		{ 0x80, 0x7f, 1, 0x00, PSW_C | PSW_AC },
+		{ 0x80, 0x80, 0, 0x00, PSW_C | PSW_OV },
+		{ 0xf0, 0x13, 0, 0x03, PSW_C },
+		{ 0x00, 0xff, 1, 0x00, PSW_C | PSW_AC },
+		{ 0x00, 0x7f, 1, 0x80, PSW_OV | PSW_AC },
+		{ 0x80, 0xff, 0, 0x7f, PSW_C | PSW_OV },
+		{ 0x80, 0xff, 1, 0x80, PSW_C | PSW_AC },
+	};
+	const int addc_testcase_count = sizeof(addc_testcases)/sizeof(struct arith_testcase);
+
+	/* ADD  A, #data (opcode = 0x24) */
+	for (i = 0; i < add_testcase_count; i++) {
+		struct arith_testcase *t = &add_testcases[i];
 		ACC(m) = t->reg;
 		PSW(m) = 0xff;
 		err = run_instr(INSTR2(0x24, t->operand), data);
+		assert_int_equal(err, 0);
+		assert_int_equal(ACC(m), t->expected_result);
+		assert_int_equal(PSW(m) & (PSW_AC | PSW_OV | PSW_C), t->flags);
+	}
+
+	/* ADDC A, #data (opcode = 0x34) */
+	for (i = 0; i < addc_testcase_count; i++) {
+		struct arith_testcase *t = &addc_testcases[i];
+		ACC(m) = t->reg;
+		if (!t->carry_in)
+			PSW(m) = 0;
+		else
+			PSW(m) = PSW_C;
+		err = run_instr(INSTR2(0x34, t->operand), data);
 		assert_int_equal(err, 0);
 		assert_int_equal(ACC(m), t->expected_result);
 		assert_int_equal(PSW(m) & (PSW_AC | PSW_OV | PSW_C), t->flags);
