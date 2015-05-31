@@ -291,8 +291,9 @@ static int run_instr(uint32_t instr, testdata *data)
 
 	/* get instruction information */
 	const emu51_instr *instr_info = _emu51_decode_instr(opcode);
+	if (!instr_info->handler)
+		fail_msg("instruction not implemented: 0x%02x", opcode);
 	assert_int_equal(instr_info->bytes, instr_length);
-	assert_non_null(instr_info->handler);
 
 	/* Run the instruction on an emulator without callback functions. */
 	testdata *data_no_callback = dup_test_data(data); /* clone emulator */
