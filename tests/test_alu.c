@@ -233,7 +233,46 @@ void test_add_addc(void **state)
 		}
 	}
 
-	/* TODO: add tests for other ADD and ADDC instructions */
+	/* ADD A, Rn (opcode = 0x28~0x2f) */
+	for (i = 0; i < add_testcase_count; i++) {
+		struct arith_testcase *t = &add_testcases[i];
+		int reg;
+
+		for (reg = 0; reg <= 7; reg++) {
+			uint8_t opcode = 0x28 + reg;
+
+			/* addr < 128 */
+			ACC(m) = t->reg;
+			PSW(m) = 0xff;
+			R_REG(m, reg) = t->operand;
+			expect_value(callback_sfr_update, index, SFR_PSW);
+			err = run_instr(INSTR1(opcode), data);
+			assert_int_equal(err, 0);
+			assert_int_equal(ACC(m), t->expected_result);
+			assert_int_equal(PSW(m) & (PSW_AC | PSW_OV | PSW_C), t->flags);
+			assert_emu51_callbacks(data, CB_SFR_UPDATE);
+		}
+	}
+
+	/* ADDC A, Rn (opcode = 0x38~0x3f) */
+	for (i = 0; i < addc_testcase_count; i++) {
+		struct arith_testcase *t = &addc_testcases[i];
+		int reg;
+
+		for (reg = 0; reg <= 1; reg++) {
+			uint8_t opcode = 0x38 + reg;
+
+			ACC(m) = t->reg;
+			PSW(m) = t->carry_in ? PSW_C : 0;
+			R_REG(m, reg) = t->operand;
+			expect_value(callback_sfr_update, index, SFR_PSW);
+			err = run_instr(INSTR1(opcode), data);
+			assert_int_equal(err, 0);
+			assert_int_equal(ACC(m), t->expected_result);
+			assert_int_equal(PSW(m) & (PSW_AC | PSW_OV | PSW_C), t->flags);
+			assert_emu51_callbacks(data, CB_SFR_UPDATE);
+		}
+	}
 
 	free_test_data(data);
 }

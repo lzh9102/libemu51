@@ -425,8 +425,7 @@ DEFINE_HANDLER(add_handler)
 				return err;
 			break;
 		default: /* ADD A, Rn */
-			/* TODO */
-			break;
+			operand = REG_R(OPCODE & 0x07);
 	}
 
 	/* 0x2* -> ADD (carry_in = 0)
@@ -498,14 +497,14 @@ const emu51_instr _emu51_instr_table[256] = {
 	INSTR(0x25, "ADD", 2, 1, add_handler),
 	INSTR(0x26, "ADD", 1, 1, add_handler),
 	INSTR(0x27, "ADD", 1, 1, add_handler),
-	NOT_IMPLEMENTED(0x28),
-	NOT_IMPLEMENTED(0x29),
-	NOT_IMPLEMENTED(0x2a),
-	NOT_IMPLEMENTED(0x2b),
-	NOT_IMPLEMENTED(0x2c),
-	NOT_IMPLEMENTED(0x2d),
-	NOT_IMPLEMENTED(0x2e),
-	NOT_IMPLEMENTED(0x2f),
+	INSTR(0x28, "ADD", 1, 1, add_handler),
+	INSTR(0x29, "ADD", 1, 1, add_handler),
+	INSTR(0x2a, "ADD", 1, 1, add_handler),
+	INSTR(0x2b, "ADD", 1, 1, add_handler),
+	INSTR(0x2c, "ADD", 1, 1, add_handler),
+	INSTR(0x2d, "ADD", 1, 1, add_handler),
+	INSTR(0x2e, "ADD", 1, 1, add_handler),
+	INSTR(0x2f, "ADD", 1, 1, add_handler),
 	INSTR(0x30, "JNB", 3, 2, jump_if_bit_handler),
 	INSTR(0x31, "ACALL", 2, 2, acall_handler),
 	NOT_IMPLEMENTED(0x32),
@@ -514,14 +513,14 @@ const emu51_instr _emu51_instr_table[256] = {
 	INSTR(0x35, "ADDC", 2, 1, add_handler),
 	INSTR(0x36, "ADDC", 1, 1, add_handler),
 	INSTR(0x37, "ADDC", 1, 1, add_handler),
-	NOT_IMPLEMENTED(0x38),
-	NOT_IMPLEMENTED(0x39),
-	NOT_IMPLEMENTED(0x3a),
-	NOT_IMPLEMENTED(0x3b),
-	NOT_IMPLEMENTED(0x3c),
-	NOT_IMPLEMENTED(0x3d),
-	NOT_IMPLEMENTED(0x3e),
-	NOT_IMPLEMENTED(0x3f),
+	INSTR(0x38, "ADDC", 1, 1, add_handler),
+	INSTR(0x39, "ADDC", 1, 1, add_handler),
+	INSTR(0x3a, "ADDC", 1, 1, add_handler),
+	INSTR(0x3b, "ADDC", 1, 1, add_handler),
+	INSTR(0x3c, "ADDC", 1, 1, add_handler),
+	INSTR(0x3d, "ADDC", 1, 1, add_handler),
+	INSTR(0x3e, "ADDC", 1, 1, add_handler),
+	INSTR(0x3f, "ADDC", 1, 1, add_handler),
 	INSTR(0x40, "JC", 2, 2, jc_handler),
 	INSTR(0x41, "AJMP", 2, 2, ajmp_handler),
 	NOT_IMPLEMENTED(0x42),
