@@ -407,7 +407,25 @@ static void general_add(emu51 *m, uint8_t operand, uint8_t carry_in)
 DEFINE_HANDLER(add_handler)
 {
 	uint8_t carry_in = 0;
-	uint8_t operand = OPERAND1;
+	int err = 0;
+
+	/* load addend */
+	uint8_t operand;
+	switch (OPCODE & 0x0f) {
+		case 0x04: /* ADD A, #data */
+			operand = OPERAND1;
+			break;
+		case 0x05: /* ADD A, iram addr */
+			operand = direct_addr_read(m, OPERAND1);
+			break;
+		case 0x06: /* ADD A, @R0 */
+		case 0x07: /* ADD A, @R1 */
+			/* TODO */
+			break;
+		default: /* ADD A, Rn */
+			/* TODO */
+			break;
+	}
 
 	/* 0x2* -> ADD (carry_in = 0)
 	 * 0x3* -> ADDC (carry_in = carry flag)
@@ -475,7 +493,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x22),
 	NOT_IMPLEMENTED(0x23),
 	INSTR(0x24, "ADD", 2, 1, add_handler),
-	NOT_IMPLEMENTED(0x25),
+	INSTR(0x25, "ADD", 2, 1, add_handler),
 	NOT_IMPLEMENTED(0x26),
 	NOT_IMPLEMENTED(0x27),
 	NOT_IMPLEMENTED(0x28),
@@ -491,7 +509,7 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x32),
 	NOT_IMPLEMENTED(0x33),
 	INSTR(0x34, "ADDC", 2, 1, add_handler),
-	NOT_IMPLEMENTED(0x35),
+	INSTR(0x35, "ADDC", 2, 1, add_handler),
 	NOT_IMPLEMENTED(0x36),
 	NOT_IMPLEMENTED(0x37),
 	NOT_IMPLEMENTED(0x38),
