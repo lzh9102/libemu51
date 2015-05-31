@@ -420,7 +420,9 @@ DEFINE_HANDLER(add_handler)
 			break;
 		case 0x06: /* ADD A, @R0 */
 		case 0x07: /* ADD A, @R1 */
-			/* TODO */
+			err = indirect_addr_read(m, BANK_BASE_ADDR + (OPCODE & 1), &operand);
+			if (err)
+				return err;
 			break;
 		default: /* ADD A, Rn */
 			/* TODO */
@@ -494,8 +496,8 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x23),
 	INSTR(0x24, "ADD", 2, 1, add_handler),
 	INSTR(0x25, "ADD", 2, 1, add_handler),
-	NOT_IMPLEMENTED(0x26),
-	NOT_IMPLEMENTED(0x27),
+	INSTR(0x26, "ADD", 1, 1, add_handler),
+	INSTR(0x27, "ADD", 1, 1, add_handler),
 	NOT_IMPLEMENTED(0x28),
 	NOT_IMPLEMENTED(0x29),
 	NOT_IMPLEMENTED(0x2a),
@@ -510,8 +512,8 @@ const emu51_instr _emu51_instr_table[256] = {
 	NOT_IMPLEMENTED(0x33),
 	INSTR(0x34, "ADDC", 2, 1, add_handler),
 	INSTR(0x35, "ADDC", 2, 1, add_handler),
-	NOT_IMPLEMENTED(0x36),
-	NOT_IMPLEMENTED(0x37),
+	INSTR(0x36, "ADDC", 1, 1, add_handler),
+	INSTR(0x37, "ADDC", 1, 1, add_handler),
 	NOT_IMPLEMENTED(0x38),
 	NOT_IMPLEMENTED(0x39),
 	NOT_IMPLEMENTED(0x3a),
